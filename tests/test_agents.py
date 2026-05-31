@@ -89,3 +89,48 @@ def test_human_agent_retries_on_bad_input(env, agent_name, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: next(responses))
     action = agent.act(np.zeros(env._obs_size()), mask)
     assert mask[action]
+
+
+def test_early_capture_catches_when_affordable(env, agent_name, player):
+    from pokemon_splendor.agents.early_capture import EarlyCaptureAgent
+
+    # Place a 1-red card at board slot 0 and give player exactly 1 red token
+    cheap = Pokemon(
+        name="cheap", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[Bonus(PokeballType.Red)],
+        evolve=[], evolve_into="", point=1,
+    )
+    env.game.board.common_revealed[0] = cheap
+    player.tokens = [PokeballToken(PokeballType.Red)]
+
+    agent = EarlyCaptureAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert action == CATCH_BOARD_START + 0
+
+
+def test_early_capture_picks_cheapest_among_catchable(env, agent_name, player):
+    from pokemon_splendor.agents.early_capture import EarlyCaptureAgent
+
+    cheap = Pokemon(
+        name="cheap", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[], evolve=[], evolve_into="", point=1,
+    )
+    expensive = Pokemon(
+        name="expensive", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red), PokeballToken(PokeballType.Blue)],
+        bonus=[], evolve=[], evolve_into="", point=3,
+    )
+    env.game.board.common_revealed[0] = cheap
+    env.game.board.common_revealed[1] = expensive
+    player.tokens = [
+        PokeballToken(PokeballType.Red),
+        PokeballToken(PokeballType.Blue),
+    ]
+
+    agent = EarlyCaptureAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert action == CATCH_BOARD_START + 0  # picks cheaper card
