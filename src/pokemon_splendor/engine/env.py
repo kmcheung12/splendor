@@ -61,7 +61,9 @@ class PokemonSplendorEnv(AECEnv):
         self.game: Game | None = None
 
     def _obs_size(self) -> int:
-        return 6 + 14 * 20 + self.num_players * 13 + self.num_players + 3
+        # Fixed size regardless of num_players so models are portable across game sizes.
+        # Layout: 6 board tokens + 14*20 card slots + 4*13 player slots + 4 current-player one-hot + 3 phase
+        return 6 + 14 * 20 + 4 * 13 + 4 + 3  # = 345
 
     def observation_space(self, agent: str):
         return self.observation_spaces[agent]
@@ -167,25 +169,29 @@ class PokemonSplendorEnv(AECEnv):
                 obs[offset+18] = slot.point / 15.0
                 obs[offset+19] = list(Tier).index(slot.tier) / 4.0
             offset += 20
-        # Players
+        # Players — always 4 slots; absent players left as zeros
         player_map = {p.name: p for p in self.game.players}
-        for a in self.possible_agents:
-            p = player_map[a]
-            tc = Counter(t.name for t in p.tokens)
-            for i, pt in enumerate(PokeballType):
-                obs[offset + i] = tc.get(pt, 0) / 10.0
-            offset += 6
-            tier_counts = Counter(c.tier for c in p.cards if not c.evolved)
-            for t in Tier:
-                obs[offset] = tier_counts.get(t, 0) / 5.0
-                offset += 1
-            obs[offset] = p.points / 18.0
-            obs[offset+1] = len(p.reserved_cards) / 3.0
-            offset += 2
-        # Current player
-        for i, a in enumerate(self.possible_agents):
-            obs[offset + i] = 1.0 if a == self.game.turn.name else 0.0
-        offset += self.num_players
+        for i in range(4):
+            a = f"player_{i}"
+            if a in player_map:
+                p = player_map[a]
+                tc = Counter(t.name for t in p.tokens)
+                for j, pt in enumerate(PokeballType):
+                    obs[offset + j] = tc.get(pt, 0) / 10.0
+                offset += 6
+                tier_counts = Counter(c.tier for c in p.cards if not c.evolved)
+                for t in Tier:
+                    obs[offset] = tier_counts.get(t, 0) / 5.0
+                    offset += 1
+                obs[offset] = p.points / 18.0
+                obs[offset+1] = len(p.reserved_cards) / 3.0
+                offset += 2
+            else:
+                offset += 13
+        # Current player one-hot — always 4 slots
+        for i in range(4):
+            obs[offset + i] = 1.0 if f"player_{i}" == self.game.turn.name else 0.0
+        offset += 4
         # Phase
         for i, ph in enumerate(GamePhase):
             obs[offset + i] = 1.0 if self.game.phase == ph else 0.0

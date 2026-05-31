@@ -17,6 +17,10 @@ def main():
     parser.add_argument("--games", type=int, default=100)
     parser.add_argument("--episodes", type=int, default=100000)
     parser.add_argument("--save", default="model.zip")
+    parser.add_argument("--opponents", default="random",
+                        help="Comma-separated opponent types for train mode (1=2p, 2=3p, 3=4p)")
+    parser.add_argument("--resume", default=None,
+                        help="Path to existing model.zip to continue training")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--data", default="data/pokemon.jsonl")
     args = parser.parse_args()
@@ -30,7 +34,8 @@ def main():
         from pokemon_splendor.cli.data_repl import run as run_data_repl
         run_data_repl(jsonl)
     elif args.mode == "train":
-        _run_train(jsonl, args.episodes, args.save)
+        opponent_types = [a.strip() for a in args.opponents.split(",")]
+        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume)
     elif args.mode == "benchmark":
         _run_benchmark(jsonl, agent_types, args.games, render_mode)
     else:
@@ -58,9 +63,9 @@ def _make_agent(agent_type: str, env=None, player_name: str = None):
     if agent_type == "denial":
         from pokemon_splendor.agents.denial import DenialAgent
         return DenialAgent(env, player_name)
-    if agent_type == "rl":
+    if agent_type.endswith(".zip"):
         from pokemon_splendor.agents.rl import RLAgent
-        return RLAgent("model.zip")
+        return RLAgent(agent_type)
     raise ValueError(f"Unknown agent type: {agent_type}")
 
 
@@ -123,16 +128,27 @@ def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_m
         print(f"  {atype}: {wins[i]}/{num_games} wins ({100*wins[i]/num_games:.1f}%)")
 
 
-def _run_train(jsonl: Path, episodes: int, save_path: str):
+def _run_train(jsonl: Path, episodes: int, save_path: str,
+               opponent_types: list[str] | None = None,
+               resume_path: str | None = None):
     from sb3_contrib import MaskablePPO
     from sb3_contrib.common.wrappers import ActionMasker
     from pokemon_splendor.agents.rl import SingleAgentEnv
 
+    opponent_types = opponent_types or ["random"]
+    num_players = len(opponent_types) + 1
+
     def mask_fn(env):
         return env.action_masks()
 
-    env = ActionMasker(SingleAgentEnv(jsonl, num_players=2), mask_fn)
-    model = MaskablePPO("MlpPolicy", env, verbose=1)
+    env = ActionMasker(SingleAgentEnv(jsonl, num_players=num_players, opponent_types=opponent_types), mask_fn)
+
+    if resume_path:
+        model = MaskablePPO.load(resume_path, env=env)
+        print(f"Resuming from {resume_path}")
+    else:
+        model = MaskablePPO("MlpPolicy", env, verbose=1)
+
     model.learn(total_timesteps=episodes)
     model.save(save_path)
     print(f"\nModel saved to {save_path}")

@@ -5,16 +5,50 @@ from pathlib import Path
 from pokemon_splendor.engine.env import PokemonSplendorEnv
 
 
-class SingleAgentEnv(gymnasium.Env):
-    """Gymnasium wrapper for player_0 training against random opponents."""
+def _make_opponent(agent_type: str, pz_env, player_name: str):
+    if agent_type == "random":
+        return None  # None = random, handled inline in _play_others
+    if agent_type.endswith(".zip"):
+        return RLAgent(agent_type)
+    if agent_type == "early-capture":
+        from pokemon_splendor.agents.early_capture import EarlyCaptureAgent
+        return EarlyCaptureAgent(pz_env, player_name)
+    if agent_type == "high-point":
+        from pokemon_splendor.agents.high_point import HighPointCaptureAgent
+        return HighPointCaptureAgent(pz_env, player_name)
+    if agent_type == "bonus-engine":
+        from pokemon_splendor.agents.bonus_engine import BonusEngineAgent
+        return BonusEngineAgent(pz_env, player_name)
+    if agent_type == "evolution-chain":
+        from pokemon_splendor.agents.evolution_chain import EvolutionChainAgent
+        return EvolutionChainAgent(pz_env, player_name)
+    if agent_type == "denial":
+        from pokemon_splendor.agents.denial import DenialAgent
+        return DenialAgent(pz_env, player_name)
+    raise ValueError(f"Unknown opponent type: {agent_type}")
 
-    def __init__(self, jsonl_path: Path, num_players: int = 2):
+
+class SingleAgentEnv(gymnasium.Env):
+    """Gymnasium wrapper: player_0 trains against configurable opponents."""
+
+    def __init__(self, jsonl_path: Path, num_players: int = 2, opponent_types: list[str] | None = None):
+        assert num_players >= 2
+        self._jsonl_path = jsonl_path
+        self._num_players = num_players
+        self._opponent_types = opponent_types or ["random"] * (num_players - 1)
+        assert len(self._opponent_types) == num_players - 1
+
         self._pz = PokemonSplendorEnv(jsonl_path, num_players=num_players)
         self.observation_space = self._pz.observation_spaces["player_0"]
         self.action_space = self._pz.action_spaces["player_0"]
+        self._opponents: dict = {}
 
     def reset(self, seed=None, options=None):
         self._pz.reset(seed=seed)
+        self._opponents = {
+            f"player_{i+1}": _make_opponent(t, self._pz, f"player_{i+1}")
+            for i, t in enumerate(self._opponent_types)
+        }
         self._play_others()
         obs, _, _, _, info = self._pz.last()
         return obs, info
@@ -30,10 +64,15 @@ class SingleAgentEnv(gymnasium.Env):
 
     def _play_others(self):
         while self._pz.agents and self._pz.agent_selection != "player_0":
-            agent = self._pz.agent_selection
-            mask = self._pz.action_mask(agent)
-            valid = np.where(mask)[0]
-            self._pz.step(int(np.random.choice(valid)))
+            name = self._pz.agent_selection
+            mask = self._pz.action_mask(name)
+            opp = self._opponents.get(name)
+            if opp is None:
+                action = int(np.random.choice(np.where(mask)[0]))
+            else:
+                obs, _, _, _, _ = self._pz.last()
+                action = opp.act(obs, mask)
+            self._pz.step(action)
 
 
 class RLAgent:
