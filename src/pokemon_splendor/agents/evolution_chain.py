@@ -4,6 +4,7 @@ import numpy as np
 from pokemon_splendor.agents.base import RuleBasedAgent
 from pokemon_splendor.models import Game, Pokemon
 from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost
+from pokemon_splendor.engine.actions import CATCH_BOARD_START, CATCH_RESERVED_START
 
 
 class EvolutionChainAgent(RuleBasedAgent):
@@ -44,7 +45,7 @@ class EvolutionChainAgent(RuleBasedAgent):
         if catchable:
             def score(item):
                 action, p = item
-                slot_idx = action - 30 if 30 <= action < 44 else None
+                slot_idx = action - CATCH_BOARD_START if CATCH_BOARD_START <= action < CATCH_RESERVED_START else None
                 return chain_scores.get(slot_idx, p.point) if slot_idx is not None else p.point
             return max(catchable, key=score)[0]
 
