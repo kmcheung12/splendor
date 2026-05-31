@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -119,34 +120,74 @@ def _op_show(records: list[dict]) -> None:
     _show_record(n, records[n - 1])
 
 
-def _op_add(records: list[dict], path: Path) -> None:
-    console.print("[bold]Add Pokémon[/] (leave blank to cancel)")
+_TEMPLATE = {
+    "name": "",
+    "tier": "common",
+    "cost": {},
+    "bonus": {},
+    "evolve": {},
+    "evolve_into": "",
+    "point": 0,
+}
+
+
+def _validate_record(r: dict) -> str | None:
+    """Return an error string, or None if valid."""
+    if not r.get("name"):
+        return "name is required"
+    if r.get("tier") not in VALID_TIERS:
+        return f"tier must be one of: {', '.join(VALID_TIERS)}"
+    for field in ("cost", "bonus", "evolve"):
+        for color in r.get(field, {}):
+            if color not in VALID_COLORS:
+                return f"unknown color '{color}' in {field}. Valid: {', '.join(VALID_COLORS)}"
+    if not isinstance(r.get("point", 0), int):
+        return "point must be an integer"
+    return None
+
+
+def _open_editor(initial: dict, error: str | None = None) -> dict | None:
+    """Open $EDITOR with initial JSON. Returns parsed dict or None if cancelled."""
+    editor = os.environ.get("EDITOR", "vi")
+    content = json.dumps(initial, indent=2)
+    if error:
+        comment = f"// ERROR: {error}\n// Fix the JSON below and save, or delete all content to cancel.\n\n"
+        content = comment + content
+
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+        f.write(content)
+        tmp = f.name
+
     try:
-        name = _prompt("name")
-        if not name:
+        subprocess.run([editor, tmp], check=True)
+        text = Path(tmp).read_text().strip()
+        # Strip comment lines before parsing
+        lines = [l for l in text.splitlines() if not l.strip().startswith("//")]
+        text = "\n".join(lines).strip()
+        if not text:
+            return None
+        return json.loads(text)
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
+        console.print(f"[red]{e}[/]")
+        return None
+    finally:
+        os.unlink(tmp)
+
+
+def _op_add(records: list[dict], path: Path) -> None:
+    record = dict(_TEMPLATE)
+    error = None
+    while True:
+        result = _open_editor(record, error)
+        if result is None:
             console.print("[dim]Cancelled.[/]")
             return
+        error = _validate_record(result)
+        if error is None:
+            record = result
+            break
+        record = result  # keep edits, re-open with error
 
-        tier_raw = _prompt("tier", "common")
-        if tier_raw not in VALID_TIERS:
-            console.print(f"[red]Invalid tier. Valid: {', '.join(VALID_TIERS)}[/]")
-            return
-
-        cost = _parse_token_dict(_prompt("cost (e.g. red:2 blue:1)", ""))
-        bonus = _parse_token_dict(_prompt("bonus (e.g. red:1)", ""))
-        evolve = _parse_token_dict(_prompt("evolve cost (e.g. red:2)", ""))
-        evolve_into = _prompt("evolve_into", "")
-        point = int(_prompt("point", "0"))
-    except (ValueError, KeyboardInterrupt) as e:
-        console.print(f"[red]{e}[/]" if isinstance(e, ValueError) else "[dim]Cancelled.[/]")
-        return
-
-    record = {
-        "name": name, "tier": tier_raw,
-        "cost": cost, "bonus": bonus,
-        "evolve": evolve, "evolve_into": evolve_into,
-        "point": point,
-    }
     records.append(record)
     _write_lines(path, records)
     console.print(f"[green]Added line {len(records)}:[/] {json.dumps(record)}")
