@@ -160,3 +160,67 @@ def test_high_point_prefers_higher_points(env, agent_name, player):
     mask = env.action_mask(agent_name)
     action = agent.act(np.zeros(env._obs_size()), mask)
     assert action == CATCH_BOARD_START + 1  # picks higher-point card
+
+
+def test_bonus_engine_prefers_bonus_below_threshold(env, agent_name, player):
+    from pokemon_splendor.agents.bonus_engine import BonusEngineAgent
+
+    low_bonus = Pokemon(
+        name="low_bonus", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[Bonus(PokeballType.Red)],  # 1 bonus token
+        evolve=[], evolve_into="", point=3,
+    )
+    high_bonus = Pokemon(
+        name="high_bonus", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Blue)],
+        bonus=[Bonus(PokeballType.Blue), Bonus(PokeballType.Blue)],  # 2 bonus tokens
+        evolve=[], evolve_into="", point=1,
+    )
+    env.game.board.common_revealed[0] = low_bonus
+    env.game.board.common_revealed[1] = high_bonus
+    player.tokens = [
+        PokeballToken(PokeballType.Red),
+        PokeballToken(PokeballType.Blue),
+    ]
+    player.cards = []  # 0 bonuses so far — below threshold
+
+    agent = BonusEngineAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert action == CATCH_BOARD_START + 1  # prefers high-bonus card despite lower points
+
+
+def test_bonus_engine_switches_to_points_above_threshold(env, agent_name, player):
+    from pokemon_splendor.agents.bonus_engine import BonusEngineAgent
+
+    low_pts = Pokemon(
+        name="low", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[Bonus(PokeballType.Red), Bonus(PokeballType.Red)],
+        evolve=[], evolve_into="", point=1,
+    )
+    high_pts = Pokemon(
+        name="high", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Blue)],
+        bonus=[],
+        evolve=[], evolve_into="", point=5,
+    )
+    env.game.board.common_revealed[0] = low_pts
+    env.game.board.common_revealed[1] = high_pts
+    player.tokens = [
+        PokeballToken(PokeballType.Red),
+        PokeballToken(PokeballType.Blue),
+    ]
+    # Give player 5 bonus tokens already (above threshold)
+    dummy = Pokemon(
+        name="d", tier=Tier.Common, cost=[],
+        bonus=[Bonus(PokeballType.Red)] * 5,
+        evolve=[], evolve_into="", point=0,
+    )
+    player.cards = [dummy]
+
+    agent = BonusEngineAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert action == CATCH_BOARD_START + 1  # switches to points above threshold
