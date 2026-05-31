@@ -147,7 +147,7 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
         model = MaskablePPO.load(resume_path, env=env)
         print(f"Resuming from {resume_path}")
     else:
-        model = MaskablePPO("MlpPolicy", env, verbose=1)
+        model = MaskablePPO("MlpPolicy", env, verbose=1, policy_kwargs={"net_arch": [128, 128]})
 
     model.learn(total_timesteps=episodes)
     model.save(save_path)
