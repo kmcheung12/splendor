@@ -13,7 +13,7 @@ def main():
                         help="Comma-separated agent types")
     parser.add_argument("--agents", default=None,
                         help="Alias for --players (used in train mode)")
-    parser.add_argument("--mode", choices=["play", "train", "benchmark"], default="play")
+    parser.add_argument("--mode", choices=["play", "train", "benchmark", "data"], default="play")
     parser.add_argument("--games", type=int, default=100)
     parser.add_argument("--episodes", type=int, default=100000)
     parser.add_argument("--save", default="model.zip")
@@ -26,7 +26,10 @@ def main():
     render_mode = "human" if (args.render or args.mode == "play") else None
     jsonl = Path(args.data)
 
-    if args.mode == "train":
+    if args.mode == "data":
+        from pokemon_splendor.cli.data_repl import run as run_data_repl
+        run_data_repl(jsonl)
+    elif args.mode == "train":
         _run_train(jsonl, args.episodes, args.save)
     elif args.mode == "benchmark":
         _run_benchmark(jsonl, agent_types, args.games, render_mode)
