@@ -290,3 +290,45 @@ def test_denial_reserves_opponent_target(env, agent_name, player):
     action = agent.act(np.zeros(env._obs_size()), mask)
     # Should be a RESERVE action for slot 0 (the target card)
     assert action in (RESERVE_MASTER_START, RESERVE_NO_MASTER_START)
+
+
+def test_single_agent_env_resets():
+    from pokemon_splendor.agents.rl import SingleAgentEnv
+    wrapped = SingleAgentEnv(JSONL, num_players=2)
+    obs, info = wrapped.reset()
+    assert isinstance(obs, np.ndarray)
+
+
+def test_single_agent_env_step():
+    from pokemon_splendor.agents.rl import SingleAgentEnv
+    wrapped = SingleAgentEnv(JSONL, num_players=2)
+    wrapped.reset()
+    mask = wrapped.action_masks()
+    action = int(np.where(mask)[0][0])
+    obs, reward, term, trunc, info = wrapped.step(action)
+    assert isinstance(obs, np.ndarray)
+
+
+def test_rl_agent_acts_after_training(tmp_path):
+    from pokemon_splendor.agents.rl import SingleAgentEnv, RLAgent
+    from sb3_contrib import MaskablePPO
+    from sb3_contrib.common.wrappers import ActionMasker
+
+    def mask_fn(env):
+        return env.action_masks()
+
+    wrapped = ActionMasker(SingleAgentEnv(JSONL, num_players=2), mask_fn)
+    model = MaskablePPO("MlpPolicy", wrapped, verbose=0)
+    model.learn(total_timesteps=200)
+    model_path = str(tmp_path / "test_model")
+    model.save(model_path)
+
+    env = PokemonSplendorEnv(JSONL, num_players=2)
+    env.reset()
+    agent_name = env.agent_selection
+    obs, _, _, _, _ = env.last()
+    mask = env.action_mask(agent_name)
+
+    agent = RLAgent(model_path + ".zip")
+    action = agent.act(obs, mask)
+    assert mask[action]
