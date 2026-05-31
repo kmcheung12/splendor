@@ -259,3 +259,34 @@ def test_evolution_chain_targets_chain_base(env, agent_name, player):
     action = agent.act(np.zeros(env._obs_size()), mask)
     # base + evolved_form chain = 3pts vs standalone = 2pts → should pick base
     assert action == CATCH_BOARD_START + 0
+
+
+def test_denial_reserves_opponent_target(env, agent_name, player):
+    from pokemon_splendor.agents.denial import DenialAgent
+
+    opp = next(p for p in env.game.players if p.name != agent_name)
+
+    # Place a card slot 0 that opponent can almost afford
+    target_card = Pokemon(
+        name="target", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[], evolve=[], evolve_into="", point=3,
+    )
+    irrelevant = Pokemon(
+        name="irrelevant", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)] * 5,
+        bonus=[], evolve=[], evolve_into="", point=1,
+    )
+    env.game.board.common_revealed[0] = target_card
+    env.game.board.common_revealed[1] = irrelevant
+    # Opponent has 0 tokens but needs only 1 red (1 round shortfall)
+    opp.tokens = []
+    # Our player has no tokens but can still reserve
+    player.tokens = []
+    player.reserved_cards = []
+
+    agent = DenialAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    # Should be a RESERVE action for slot 0 (the target card)
+    assert action in (RESERVE_MASTER_START, RESERVE_NO_MASTER_START)
