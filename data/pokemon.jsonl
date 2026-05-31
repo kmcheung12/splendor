@@ -1,0 +1,14 @@
+{"name": "charmander", "tier": "common", "cost": {"red": 2}, "bonus": {"red": 1}, "evolve": {"red": 2}, "evolve_into": "charmeleon", "point": 0}
+{"name": "charmeleon", "tier": "uncommon", "cost": {"red": 3}, "bonus": {"red": 2}, "evolve": {"red": 3}, "evolve_into": "charizard", "point": 1}
+{"name": "charizard", "tier": "rare", "cost": {"red": 4}, "bonus": {"red": 3}, "evolve": {}, "evolve_into": "", "point": 3}
+{"name": "squirtle", "tier": "common", "cost": {"blue": 2}, "bonus": {"blue": 1}, "evolve": {"blue": 2}, "evolve_into": "wartortle", "point": 0}
+{"name": "wartortle", "tier": "uncommon", "cost": {"blue": 3}, "bonus": {"blue": 2}, "evolve": {}, "evolve_into": "", "point": 1}
+{"name": "bulbasaur", "tier": "common", "cost": {"yellow": 2}, "bonus": {"yellow": 1}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "pikachu", "tier": "common", "cost": {"yellow": 1, "red": 1}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "mewtwo", "tier": "epic", "cost": {"master": 1, "red": 3, "blue": 3}, "bonus": {"red": 3}, "evolve": {}, "evolve_into": "", "point": 8}
+{"name": "rayquaza", "tier": "legendary", "cost": {"master": 1, "red": 4, "blue": 4}, "bonus": {"blue": 3}, "evolve": {}, "evolve_into": "", "point": 12}
+{"name": "eevee", "tier": "common", "cost": {"pink": 2}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "geodude", "tier": "common", "cost": {"black": 2}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "gastly", "tier": "uncommon", "cost": {"black": 2, "pink": 1}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 1}
+{"name": "vaporeon", "tier": "rare", "cost": {"blue": 3, "pink": 2}, "bonus": {"blue": 2}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "flareon", "tier": "rare", "cost": {"red": 3, "yellow": 2}, "bonus": {"red": 2}, "evolve": {}, "evolve_into": "", "point": 4}
