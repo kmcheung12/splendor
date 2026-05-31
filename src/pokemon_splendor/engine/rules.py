@@ -162,7 +162,7 @@ def apply_reserve(
     take_master: bool,
 ) -> Game:
     if pokemon.tier in (Tier.Epic, Tier.Legendary):
-        raise ValueError(f"Epic Pokémon cannot be reserved")
+        raise ValueError(f"Epic or Legendary Pokémon cannot be reserved")
     if len(player.reserved_cards) >= 3:
         raise ValueError("Cannot reserve more than 3 Pokémon")
     if take_master and game.tokens.get(PokeballType.Master, 0) == 0:

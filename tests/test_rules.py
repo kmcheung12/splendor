@@ -304,73 +304,59 @@ def test_board_slot_empty_when_deck_exhausted(two_player_game, charmander):
 
 # --- Evolution ---
 
-def test_get_evolvable_cards(two_player_game, charmander, charmeleon):
+def test_get_evolvable_cards(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    p1.cards = [charmander, red_card]
+    p1.cards = [charmander, red_bonus_card]
     game.board.uncommon_revealed[0] = charmeleon
     evolvable = get_evolvable_cards(game, p1)
     assert any(card.name == "charmander" for card, _ in evolvable)
 
 
-def test_evolvable_uses_only_non_evolved_bonuses(two_player_game, charmander, charmeleon):
+def test_evolvable_uses_only_non_evolved_bonuses(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    red_card.evolved = True
-    p1.cards = [charmander, red_card]
+    red_bonus_card.evolved = True
+    p1.cards = [charmander, red_bonus_card]
     game.board.uncommon_revealed[0] = charmeleon
     evolvable = get_evolvable_cards(game, p1)
     assert evolvable == []
 
 
-def test_evolve_marks_source_as_evolved(two_player_game, charmander, charmeleon):
+def test_evolve_marks_source_as_evolved(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    p1.cards = [charmander, red_card]
+    p1.cards = [charmander, red_bonus_card]
     game.board.uncommon_revealed[0] = charmeleon
     apply_evolve(game, p1, card_index=0)
     assert charmander.evolved is True
 
 
-def test_evolve_adds_evolved_form_to_collection(two_player_game, charmander, charmeleon):
+def test_evolve_adds_evolved_form_to_collection(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    p1.cards = [charmander, red_card]
+    p1.cards = [charmander, red_bonus_card]
     game.board.uncommon_revealed[0] = charmeleon
     apply_evolve(game, p1, card_index=0)
     assert charmeleon in p1.cards
 
 
-def test_evolve_is_free(two_player_game, charmander, charmeleon):
+def test_evolve_is_free(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    p1.cards = [charmander, red_card]
+    p1.cards = [charmander, red_bonus_card]
     p1.tokens = []
     game.board.uncommon_revealed[0] = charmeleon
     apply_evolve(game, p1, card_index=0)
     assert len(p1.tokens) == 0
 
 
-def test_evolve_excludes_source_from_points(two_player_game, charmander, charmeleon):
+def test_evolve_excludes_source_from_points(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    p1.cards = [charmander, red_card]
+    p1.cards = [charmander, red_bonus_card]
     game.board.uncommon_revealed[0] = charmeleon
     apply_evolve(game, p1, card_index=0)
     assert p1.points == charmeleon.point
 
 
-def test_evolve_from_reserved(two_player_game, charmander, charmeleon):
+def test_evolve_from_reserved(two_player_game, charmander, charmeleon, red_bonus_card):
     game, p1, _ = two_player_game
-    from pokemon_splendor.models import Pokemon
-    red_card = Pokemon(name="r", tier=Tier.Common, cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red), evolve=[], evolve_into="", point=0)
-    p1.cards = [charmander, red_card]
+    p1.cards = [charmander, red_bonus_card]
     p1.reserved_cards = [charmeleon]
     game.board.uncommon_revealed[0] = None
     apply_evolve(game, p1, card_index=0)

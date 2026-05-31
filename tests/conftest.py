@@ -1,6 +1,6 @@
 import pytest
 from pokemon_splendor.models import (
-    Pokemon, Player, Board, Game, Tier, PokeballType, PokeballToken, Bonus, GamePhase,
+    Pokemon, Player, Board, Game, Tier, PokeballType, PokeballToken, Bonus,
 )
 
 
@@ -58,6 +58,15 @@ def mewtwo():
         name="mewtwo", tier=Tier.Epic,
         cost=tokens(PokeballType.Master, PokeballType.Red, PokeballType.Red, PokeballType.Red),
         bonus=[], evolve=[], evolve_into="", point=8,
+    )
+
+
+@pytest.fixture
+def red_bonus_card():
+    return Pokemon(
+        name="r", tier=Tier.Common,
+        cost=[], bonus=bonuses(PokeballType.Red, PokeballType.Red),
+        evolve=[], evolve_into="", point=0,
     )
 
 
