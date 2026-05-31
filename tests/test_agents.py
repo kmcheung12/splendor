@@ -332,3 +332,32 @@ def test_rl_agent_acts_after_training(tmp_path):
     agent = RLAgent(model_path + ".zip")
     action = agent.act(obs, mask)
     assert mask[action]
+
+
+@pytest.mark.parametrize("agent_type", [
+    "random", "early-capture", "high-point",
+    "bonus-engine", "evolution-chain", "denial",
+])
+def test_agent_completes_full_game(agent_type, env):
+    """Each rule-based agent plays a full game without error."""
+    from pokemon_splendor.__main__ import _make_agent, _call_agent
+
+    agent_name = env.agent_selection
+    agent = _make_agent(agent_type, env=env, player_name=agent_name)
+
+    for _ in range(10000):
+        if not env.agents:
+            break
+        current = env.agent_selection
+        obs, _, term, trunc, _ = env.last()
+        if term or trunc:
+            break
+        mask = env.action_mask(current)
+        if current == agent_name:
+            action = _call_agent(agent, obs, mask)
+        else:
+            action = int(np.where(mask)[0][0])
+        env.step(action)
+
+    # Game must end
+    assert not env.agents or all(env.terminations.values())
