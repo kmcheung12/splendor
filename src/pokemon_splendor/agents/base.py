@@ -1,7 +1,7 @@
 # src/pokemon_splendor/agents/base.py
 from collections import Counter
 import numpy as np
-from pokemon_splendor.models import Game, Player, Pokemon, PokeballType, Tier
+from pokemon_splendor.models import Game, GamePhase, Player, Pokemon, PokeballType, Tier
 from pokemon_splendor.engine.actions import (
     TAKE_DIFF_COMBOS, NORMAL_TYPES,
     TAKE_DIFF_START, TAKE_SAME_START, CATCH_BOARD_START, CATCH_RESERVED_START,
@@ -76,9 +76,9 @@ class RuleBasedAgent:
 
     def act(self, obs: np.ndarray, mask: np.ndarray) -> int:
         game = self._game
-        if game.phase.value == "discard":
+        if game.phase == GamePhase.DISCARD:
             return self._handle_discard(mask)
-        if game.phase.value == "evolve":
+        if game.phase == GamePhase.EVOLVE:
             return self._handle_evolve(mask)
         return self._main_action(mask)
 
@@ -101,7 +101,9 @@ class RuleBasedAgent:
         for action in range(EVOLVE_START, EVOLVE_PASS):
             if mask[action]:
                 return action
-        return EVOLVE_PASS
+        if mask[EVOLVE_PASS]:
+            return EVOLVE_PASS
+        return int(np.where(mask)[0][0])
 
     def _catchable(self, mask: np.ndarray) -> list[tuple[int, Pokemon]]:
         game = self._game
