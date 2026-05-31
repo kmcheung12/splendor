@@ -134,3 +134,29 @@ def test_early_capture_picks_cheapest_among_catchable(env, agent_name, player):
     mask = env.action_mask(agent_name)
     action = agent.act(np.zeros(env._obs_size()), mask)
     assert action == CATCH_BOARD_START + 0  # picks cheaper card
+
+
+def test_high_point_prefers_higher_points(env, agent_name, player):
+    from pokemon_splendor.agents.high_point import HighPointCaptureAgent
+
+    low_pts = Pokemon(
+        name="low", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[], evolve=[], evolve_into="", point=1,
+    )
+    high_pts = Pokemon(
+        name="high", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Blue)],
+        bonus=[], evolve=[], evolve_into="", point=5,
+    )
+    env.game.board.common_revealed[0] = low_pts
+    env.game.board.common_revealed[1] = high_pts
+    player.tokens = [
+        PokeballToken(PokeballType.Red),
+        PokeballToken(PokeballType.Blue),
+    ]
+
+    agent = HighPointCaptureAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert action == CATCH_BOARD_START + 1  # picks higher-point card
