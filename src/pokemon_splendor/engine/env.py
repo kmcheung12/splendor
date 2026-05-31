@@ -1,3 +1,4 @@
+import copy
 import random
 from pathlib import Path
 from collections import Counter
@@ -73,7 +74,6 @@ class PokemonSplendorEnv(AECEnv):
             random.seed(seed)
 
         by_tier: dict[Tier, list[Pokemon]] = {t: [] for t in Tier}
-        import copy
         for p in self._all_pokemon:
             by_tier[p.tier].append(copy.deepcopy(p))
         for lst in by_tier.values():
@@ -216,9 +216,7 @@ class PokemonSplendorEnv(AECEnv):
         available_types = {pt for pt in NORMAL_TYPES if game.tokens.get(pt, 0) > 0}
         for i, combo in enumerate(TAKE_DIFF_COMBOS):
             if all(pt in available_types for pt in combo):
-                can_take = len(combo) <= len(available_types)
-                if can_take:
-                    mask[TAKE_DIFF_START + i] = True
+                mask[TAKE_DIFF_START + i] = True
 
         for pt in NORMAL_TYPES:
             if game.tokens.get(pt, 0) >= 4:
@@ -424,6 +422,8 @@ class PokemonSplendorEnv(AECEnv):
         # Advance turn
         idx = self.game.players.index(player)
         next_player = self.game.players[(idx + 1) % len(self.game.players)]
+        if next_player is self.game.starting_player:
+            self.game.round += 1
         self.game.turn = next_player
         self.agent_selection = self._agent_selector.next()
 
