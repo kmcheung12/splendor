@@ -224,3 +224,38 @@ def test_bonus_engine_switches_to_points_above_threshold(env, agent_name, player
     mask = env.action_mask(agent_name)
     action = agent.act(np.zeros(env._obs_size()), mask)
     assert action == CATCH_BOARD_START + 1  # switches to points above threshold
+
+
+def test_evolution_chain_targets_chain_base(env, agent_name, player):
+    from pokemon_splendor.agents.evolution_chain import EvolutionChainAgent
+
+    # base has chain value 0+3=3; standalone has value 2 but no chain
+    base = Pokemon(
+        name="base", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Red)],
+        bonus=[Bonus(PokeballType.Red)],
+        evolve=[], evolve_into="evolved_form", point=0,
+    )
+    evolved_form = Pokemon(
+        name="evolved_form", tier=Tier.Uncommon,
+        cost=[PokeballToken(PokeballType.Red), PokeballToken(PokeballType.Red)],
+        bonus=[], evolve=[], evolve_into="", point=3,
+    )
+    standalone = Pokemon(
+        name="standalone", tier=Tier.Common,
+        cost=[PokeballToken(PokeballType.Blue)],
+        bonus=[], evolve=[], evolve_into="", point=2,
+    )
+    env.game.board.common_revealed[0] = base
+    env.game.board.common_revealed[1] = standalone
+    env.game.board.uncommon_revealed[0] = evolved_form
+    player.tokens = [
+        PokeballToken(PokeballType.Red),
+        PokeballToken(PokeballType.Blue),
+    ]
+
+    agent = EvolutionChainAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    # base + evolved_form chain = 3pts vs standalone = 2pts → should pick base
+    assert action == CATCH_BOARD_START + 0
