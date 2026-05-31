@@ -61,3 +61,31 @@ def test_describe_action_evolve_pass(env, agent_name, player):
     from pokemon_splendor.agents.base import describe_action
     desc = describe_action(EVOLVE_PASS, env.game, player)
     assert "Pass" in desc
+
+
+def test_random_agent_returns_valid_action(env, agent_name):
+    from pokemon_splendor.agents.random import RandomAgent
+    agent = RandomAgent()
+    mask = env.action_mask(agent_name)
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert mask[action]
+
+
+def test_human_agent_reads_stdin(env, agent_name, monkeypatch):
+    from pokemon_splendor.agents.human import HumanAgent
+    agent = HumanAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    # Mock stdin to select action 0
+    monkeypatch.setattr("builtins.input", lambda _: "0")
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert mask[action]
+
+
+def test_human_agent_retries_on_bad_input(env, agent_name, monkeypatch):
+    from pokemon_splendor.agents.human import HumanAgent
+    agent = HumanAgent(env, agent_name)
+    mask = env.action_mask(agent_name)
+    responses = iter(["bad", "-1", "0"])
+    monkeypatch.setattr("builtins.input", lambda _: next(responses))
+    action = agent.act(np.zeros(env._obs_size()), mask)
+    assert mask[action]
