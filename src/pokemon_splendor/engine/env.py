@@ -345,8 +345,10 @@ class PokemonSplendorEnv(AECEnv):
             if action == EVOLVE_PASS:
                 return
             card_idx = action - EVOLVE_START
+            points_before = player.points
             apply_evolve(game, player, card_idx)
             game.evolved_this_turn = True
+            self.rewards[player.name] += (player.points - points_before) * 0.05
             return
 
         # Main phase
@@ -376,11 +378,15 @@ class PokemonSplendorEnv(AECEnv):
                 + game.board.legendary_revealed
             )
             pokemon = all_slots[slot_idx]
+            points_before = player.points
             apply_catch_pokemon(game, player, pokemon, from_reserved=False, board_slot=slot_idx)
+            self.rewards[player.name] += (player.points - points_before) * 0.05
         elif CATCH_RESERVED_START <= action < RESERVE_MASTER_START:
             idx = action - CATCH_RESERVED_START
             pokemon = player.reserved_cards[idx]
+            points_before = player.points
             apply_catch_pokemon(game, player, pokemon, from_reserved=True, board_slot=None)
+            self.rewards[player.name] += (player.points - points_before) * 0.05
         elif RESERVE_MASTER_START <= action < RESERVE_NO_MASTER_START:
             slot_idx = action - RESERVE_MASTER_START
             all_slots = (
