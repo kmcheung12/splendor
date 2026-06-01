@@ -50,8 +50,16 @@ def render(game: Game) -> None:
         table.add_column("Pts")
         for i, p in enumerate(slots):
             if p:
-                cost_str = " ".join(f"{t.name.value}" for t in p.cost)
-                bonus_str = " ".join(f"{b.name.value}" for b in p.bonus)
+                cost_counts = Counter(t.name for t in p.cost)
+                bonus_counts = Counter(b.name for b in p.bonus)
+                cost_str = " ".join(
+                    f"[{TYPE_COLORS[pt]}]{pt.value}:{n}[/]"
+                    for pt, n in cost_counts.items()
+                )
+                bonus_str = " ".join(
+                    f"[{TYPE_COLORS[pt]}]{pt.value}:{n}[/]"
+                    for pt, n in bonus_counts.items()
+                )
                 table.add_row(str(i), p.name, cost_str, bonus_str, str(p.point))
             else:
                 table.add_row(str(i), "—", "", "", "")
@@ -60,7 +68,10 @@ def render(game: Game) -> None:
     # Players
     for p in game.players:
         tc = Counter(t.name for t in p.tokens)
-        token_str = "  ".join(f"{pt.value}:{tc[pt]}" for pt in PokeballType if tc[pt] > 0)
+        token_str = "  ".join(
+            f"[{TYPE_COLORS[pt]}]{pt.value}:{tc[pt]}[/]"
+            for pt in PokeballType if tc[pt] > 0
+        )
         cards_str = ", ".join(
             f"{c.name}{'*' if c.evolved else ''}" for c in p.cards
         )
