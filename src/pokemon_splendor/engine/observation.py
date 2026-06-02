@@ -53,7 +53,7 @@ def compute_observation(game: Game, player_name: str) -> np.ndarray:
             offset += 6
             tier_counts = Counter(c.tier for c in p.cards if not c.evolved)
             for t in Tier:
-                obs[offset] = tier_counts.get(t, 0) / 10.0
+                obs[offset] = tier_counts.get(t, 0) / 5.0
                 offset += 1
             obs[offset] = p.points / 18.0
             obs[offset+1] = len(p.reserved_cards) / 3.0
