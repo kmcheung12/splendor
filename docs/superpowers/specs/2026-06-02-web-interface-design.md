@@ -170,20 +170,88 @@ frontend/
       animationQueue.ts   # Serialises animations so they don't overlap
     components/
       Lobby.svelte         # Waiting room: slot list, claim/release, start
-      Board.svelte         # Token pool + 5 tier rows of card slots
-      CardSlot.svelte      # Single card (name, cost, bonus, tier badge)
-      PlayerPanel.svelte   # Tokens, hand, reserved cards, points
-      ActionMenu.svelte    # Human player valid action list (own turn only)
+      Board.svelte         # Token pool + 5×4 card grid
+      CardSlot.svelte      # Single card (full detail, TCG aesthetic)
+      CardStack.svelte     # Player hand — stacked cards by bonus colour
+      PlayerPanel.svelte   # Tokens, card stacks, reserved cards, points
+      ActionMenu.svelte    # Contextual confirm popup + cancel
+      StatusChip.svelte    # Turn/phase/thinking indicator near board
       GameSetup.svelte     # New game config form (host only)
     App.svelte
 ```
 
+---
+
+## UI Design
+
+### Overall layout
+
+Center-stage: the board occupies the center of the viewport. Player panels are arranged around the edges — top/bottom for 2 players; top-left, top-right, bottom-center for 3 players; all four sides for 4 players. Panels are oriented horizontally.
+
+### Board
+
+Token pool centered above the card grid:
+
+```
+        ┌──────────────────────────────────────────┐
+        │  🔴🔴🔴🔴  🟡🟡🟡🟡  🔵🔵🔵🔵  ...    │  ← token pool (one icon per token)
+        └──────────────────────────────────────────┘
+┌──────────┬──────────┬──────────┬──────────┬──────────┐
+│  (empty) │ Epic ▣   │ Epic     │ Leg. ▣   │ Leg.     │
+├──────────┼──────────┼──────────┼──────────┼──────────┤
+│ Rare ▣   │ Rare 1   │ Rare 2   │ Rare 3   │ Rare 4   │
+├──────────┼──────────┼──────────┼──────────┼──────────┤
+│ Unc. ▣   │ Unc. 1   │ Unc. 2   │ Unc. 3   │ Unc. 4   │
+├──────────┼──────────┼──────────┼──────────┼──────────┤
+│ Com. ▣   │ Com. 1   │ Com. 2   │ Com. 3   │ Com. 4   │
+└──────────┴──────────┴──────────┴──────────┴──────────┘
+```
+
+Column 1 shows the back face of each tier's deck (card count badge). Row 1 has Epic and Legendary slots; rows 2–4 have Common/Uncommon/Rare with 4 revealed slots each.
+
+### Card design (full detail, always visible)
+
+Pokemon TCG aesthetic: rounded corners, tier-coloured gradient background (brown=Common, silver=Uncommon, gold=Rare, purple=Epic, rainbow shimmer=Legendary). Each card shows:
+
+- Top-left: Pokémon name (bold)
+- Top-right: point value badge
+- Middle row: Cost icons (pokeball types)
+- Lower row: Bonus icon(s)
+- Bottom row: Evolves → [target name] + evolve cost icons (if applicable)
+
+### Player panel
+
+Horizontal strip on the panel edge. Left to right:
+
+1. **Name + points** — player name, large point counter
+2. **Tokens** — one coloured icon per token held: `🔴🔴🔴 🟡🟡 🔵🔵` (no numbers)
+3. **Card stacks** — cards grouped and stacked by bonus colour. Only the top ~1/3 of each card is visible, showing name, evolves-into, and bonus icon. Cards stack on top of each other with a vertical offset so all are partially visible. Evolved base cards flip face-down and sit behind their evolved form in the stack.
+4. **Reserved cards** — face-up, same top-1/3 strip style, shown in a separate group
+
+### Action interaction (human turns)
+
+- Valid board targets (cards, token piles) glow and pulse on the active player's turn.
+- Clicking a valid target opens a floating **confirm popup** anchored near the click: shows the action description and a Confirm button.
+- A **Cancel** button (or clicking away) dismisses the popup and returns to the neutral highlighted state.
+- No separate action list panel — all interaction is directly on the board.
+
+### Turn & status indicator
+
+- The active player's panel has a glowing highlight border.
+- A small **status chip** floats near the top of the board showing: `▶ Alan — MAIN`.
+- During MCTS think time: chip changes to `⟳ mcts — thinking…`
+- During a human player's turn before they act: chip shows `⟳ Alan — thinking…`
+
+### Game over
+
+The board stays visible. A banner slides in from the top announcing the winner. `tsParticles` fires a confetti burst localised over the winner's player panel. A "New Game" button appears in the banner.
+
 ### Animations
 
-- **`crossfade`** (Svelte built-in): shared-element transitions — a token keyed on the board and in the player panel flies between them automatically when store updates.
-- **`fly`** (Svelte built-in): cards entering/leaving slots (deal from deck, catch into hand).
-- **CSS `filter: drop-shadow` pulse**: highlights affordable cards on a player's turn.
-- **`tsParticles`** (one CDN script tag): particle burst on Epic/Legendary catches.
+- **`crossfade`** (Svelte built-in): tokens fly from the board pool to the player panel (and back on discard) via shared-element transition keyed by token identity.
+- **`fly`** (Svelte built-in): cards slide in when dealt to a board slot; cards fly into the player's card stack when caught.
+- **CSS `drop-shadow` pulse**: affordable card highlight on the active player's turn.
+- **`tsParticles`**: particle burst on Epic/Legendary catches and on game-over winner reveal.
 
 Animation events are serialised through `animationQueue.ts` so concurrent events play sequentially rather than overlapping.
 
