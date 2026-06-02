@@ -25,15 +25,6 @@ def _mock_ws():
     return ws
 
 
-async def _collect_messages(ws, count: int, session_task) -> list[dict]:
-    msgs = []
-    async def capture(text):
-        msgs.append(json.loads(text))
-    ws.send_text.side_effect = capture
-    await asyncio.wait_for(session_task, timeout=10.0)
-    return msgs
-
-
 @pytest.mark.asyncio
 async def test_session_broadcasts_initial_state():
     session = GameSession(_config(), JSONL)

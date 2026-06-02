@@ -133,6 +133,10 @@ class GameSession:
             slot = next((s for s in self.slots if env.possible_agents[s.index] == agent_name), None)
             is_human = slot is not None and slot.websocket is not None
 
+            # If this was a human slot but player disconnected, build fallback agent now
+            if not is_human and agents[agent_name] is None and slot is not None:
+                agents[agent_name] = make_agent(slot.agent_type, env, agent_name)
+
             await self.broadcast({"type": "thinking", "player": agent_name})
 
             if is_human:
