@@ -5,8 +5,8 @@ from pokemon_splendor.models import Game, PokeballType, Tier, GamePhase
 from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost, get_evolvable_cards
 from pokemon_splendor.engine.actions import (
     TOTAL_ACTIONS, TAKE_DIFF_COMBOS, NORMAL_TYPES,
-    TAKE_DIFF_START, TAKE_SAME_START, CATCH_BOARD_START, CATCH_RESERVED_START,
-    RESERVE_MASTER_START, RESERVE_NO_MASTER_START, DISCARD_START,
+    TAKE_DIFF_START, CATCH_BOARD_START, CATCH_RESERVED_START,
+    RESERVE_MASTER_START, RESERVE_NO_MASTER_START,
     EVOLVE_START, EVOLVE_PASS, DISCARD_ACTION, TAKE_SAME_ACTION,
     MAX_OWNED_CARDS,
 )
