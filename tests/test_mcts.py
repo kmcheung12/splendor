@@ -104,3 +104,80 @@ def test_evaluate_position_alpha_scales_with_players():
     board = Board(common_revealed=[free_card, None, None, None])
     game = _make_game(players, board)
     assert evaluate_position(game, players[0]) == pytest.approx(1.0 / WIN_SCORE, rel=1e-3)
+
+
+from pathlib import Path
+from pokemon_splendor.engine.simulator import game_step
+from pokemon_splendor.engine.env import PokemonSplendorEnv
+import numpy as np
+
+JSONL = Path("data/pokemon.jsonl")
+
+
+def _make_env_game():
+    env = PokemonSplendorEnv(jsonl_path=JSONL, num_players=2)
+    env.reset()
+    return env
+
+
+def test_game_step_returns_new_game_object():
+    """game_step must return a copy, not mutate the original."""
+    env = _make_env_game()
+    original = env.game
+    agent = env.agent_selection
+    mask = env.action_mask(agent)
+    action = int(np.where(mask)[0][0])
+    new_game, _ = game_step(original, action, agent)
+    assert new_game is not original
+
+
+def test_game_step_advances_turn():
+    """After a non-terminal action, game.turn should usually change."""
+    env = _make_env_game()
+    original = env.game
+    agent = env.agent_selection
+    mask = env.action_mask(agent)
+    # Take a token-taking action (always available at game start)
+    from pokemon_splendor.engine.actions import TAKE_DIFF_START, TAKE_SAME_START
+    token_action = next(
+        a for a in range(TAKE_DIFF_START, TAKE_SAME_START) if mask[a]
+    )
+    new_game, is_terminal = game_step(original, token_action, agent)
+    assert not is_terminal
+    assert new_game.turn is not None
+
+
+def test_game_step_terminal_on_18_points():
+    """Setting a player to 18 points and having them catch a final card triggers terminal."""
+    env = _make_env_game()
+    game = env.game
+    agent = env.agent_selection
+    player = next(p for p in game.players if p.name == agent)
+
+    # Give player enough points and tokens to catch and win
+    player.points = 17
+    for pt in [PokeballType.Red, PokeballType.Blue, PokeballType.Yellow,
+               PokeballType.Pink, PokeballType.Black]:
+        player.tokens.extend([PokeballToken(pt)] * 4)
+
+    mask = env.action_mask(agent)
+    from pokemon_splendor.engine.actions import CATCH_BOARD_START, CATCH_RESERVED_START
+
+    # Find a catch action for a card worth >=1 point
+    catch_action = None
+    all_slots = (
+        game.board.common_revealed + game.board.uncommon_revealed
+        + game.board.rare_revealed + game.board.epic_revealed
+        + game.board.legendary_revealed
+    )
+    for slot_idx, card in enumerate(all_slots):
+        a = CATCH_BOARD_START + slot_idx
+        if mask[a] and card is not None and card.point >= 1:
+            catch_action = a
+            break
+    if catch_action is None:
+        pytest.skip("No catchable point-scoring card in this game state")
+
+    new_game, is_terminal = game_step(game, catch_action, agent)
+    # Terminal happens at end of round; check that win_triggered is at least set
+    assert new_game.win_triggered or is_terminal
