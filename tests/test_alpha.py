@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 import pytest
 from pokemon_splendor.agents.alpha_net import AlphaNet
 
@@ -57,3 +56,49 @@ def test_alpha_net_batch_forward():
     policy, value = net(obs, mask)
     assert policy.shape == (4, TOTAL_ACTIONS)
     assert value.shape == (4,)
+
+
+def test_alpha_net_all_masked_raises():
+    net = AlphaNet()
+    obs = torch.zeros(OBS_SIZE)
+    mask = torch.zeros(TOTAL_ACTIONS, dtype=torch.bool)
+    with pytest.raises(ValueError, match="all actions are masked"):
+        net(obs, mask)
+
+
+def test_alpha_net_save_load_roundtrip():
+    import tempfile
+    import os
+
+    net = AlphaNet()
+    obs = torch.randn(OBS_SIZE)
+    mask = torch.ones(TOTAL_ACTIONS, dtype=torch.bool)
+
+    # Get output from original network
+    policy_orig, value_orig = net(obs, mask)
+
+    # Save and load
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "test_net.pth")
+        net.save(path)
+        net_loaded = AlphaNet.load(path)
+
+    # Get output from loaded network (should be identical)
+    policy_loaded, value_loaded = net_loaded(obs, mask)
+
+    assert torch.allclose(policy_orig, policy_loaded)
+    assert torch.allclose(value_orig, value_loaded)
+
+
+def test_alpha_net_load_sets_eval_mode():
+    import tempfile
+    import os
+
+    net = AlphaNet()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "test_net.pth")
+        net.save(path)
+        net_loaded = AlphaNet.load(path)
+
+    assert net_loaded.training == False
