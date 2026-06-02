@@ -231,7 +231,7 @@ def test_self_play_record_fields():
     assert 0.0 <= r.outcome <= 1.0
 
 
-def test_self_play_game_terminates():
+def test_self_play_game_produces_moves():
     net = AlphaNet()
     records = run_self_play_game(Path("data/pokemon.jsonl"), net, num_players=2, n_simulations=5, depth=1)
     assert len(records) >= 10

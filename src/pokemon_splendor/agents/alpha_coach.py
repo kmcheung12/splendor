@@ -34,7 +34,7 @@ class SelfPlayRecord:
 
 def run_self_play_game(
     jsonl_path: Path,
-    network,
+    network: "torch.nn.Module",
     num_players: int = 2,
     n_simulations: int = 100,
     depth: int = 4,
