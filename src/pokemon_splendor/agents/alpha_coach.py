@@ -80,3 +80,34 @@ def run_self_play_game(
         SelfPlayRecord(obs=obs, visit_counts=vc, outcome=outcomes[name])
         for name, obs, vc in move_records
     ]
+
+
+def train_step(
+    network: "torch.nn.Module",
+    optimizer: torch.optim.Optimizer,
+    batch: list[SelfPlayRecord],
+) -> tuple[float, float]:
+    network.train()
+    obs_batch = torch.tensor(
+        np.stack([r.obs for r in batch]), dtype=torch.float32
+    )
+    visit_batch = torch.tensor(
+        np.array([r.visit_counts for r in batch]), dtype=torch.float32
+    )
+    outcome_batch = torch.tensor(
+        [r.outcome for r in batch], dtype=torch.float32
+    )
+    mask_batch = torch.ones(len(batch), 108, dtype=torch.bool)
+
+    policy, value = network(obs_batch, mask_batch)
+
+    policy_loss = -(visit_batch * torch.log(policy.clamp(min=1e-8))).sum(dim=-1).mean()
+    value_loss = F.mse_loss(value, outcome_batch)
+    loss = policy_loss + value_loss
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    network.eval()
+    return policy_loss.item(), value_loss.item()

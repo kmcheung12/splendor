@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import pytest
 from pokemon_splendor.agents.alpha_net import AlphaNet
 
@@ -235,3 +236,39 @@ def test_self_play_game_produces_moves():
     net = AlphaNet()
     records = run_self_play_game(Path("data/pokemon.jsonl"), net, num_players=2, n_simulations=5, depth=1)
     assert len(records) >= 10
+
+
+from pokemon_splendor.agents.alpha_coach import train_step
+
+
+def test_train_step_returns_losses():
+    net = AlphaNet()
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
+    batch = [
+        SelfPlayRecord(
+            obs=np.random.rand(345).astype(np.float32),
+            visit_counts=[1.0 / 108] * 108,
+            outcome=0.5,
+        )
+        for _ in range(8)
+    ]
+    policy_loss, value_loss = train_step(net, optimizer, batch)
+    assert policy_loss >= 0.0
+    assert value_loss >= 0.0
+
+
+def test_train_step_updates_weights():
+    net = AlphaNet()
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
+    batch = [
+        SelfPlayRecord(
+            obs=np.random.rand(345).astype(np.float32),
+            visit_counts=[1.0 / 108] * 108,
+            outcome=1.0,
+        )
+        for _ in range(8)
+    ]
+    before = net.value_head.weight.data.clone()
+    train_step(net, optimizer, batch)
+    after = net.value_head.weight.data
+    assert not torch.allclose(before, after)
