@@ -3,16 +3,13 @@ import math
 import pickle
 import torch
 import numpy as np
+from collections import Counter
 from dataclasses import dataclass, field
-from pokemon_splendor.models import Game, Player, GamePhase, PokeballType
+from pokemon_splendor.models import Game, GamePhase, PokeballType
 from pokemon_splendor.engine.simulator import _step_inplace
 from pokemon_splendor.engine.observation import compute_mask, compute_observation
 from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost
-from pokemon_splendor.engine.actions import (
-    TOTAL_ACTIONS, TAKE_DIFF_COMBOS, NORMAL_TYPES,
-    TAKE_DIFF_START, TAKE_SAME_START, CATCH_BOARD_START,
-    RESERVE_MASTER_START, EVOLVE_START, EVOLVE_PASS, DISCARD_ACTION,
-)
+from pokemon_splendor.engine.actions import TOTAL_ACTIONS, DISCARD_ACTION
 from pokemon_splendor.agents.base import RuleBasedAgent
 from pokemon_splendor.agents.alpha_net import AlphaNet
 
@@ -54,11 +51,6 @@ class AlphaMCTSAgent(RuleBasedAgent):
             return action, visit_counts
 
         valid_actions = list(np.where(mask)[0])
-        if not valid_actions:
-            action = int(np.where(mask)[0][0])
-            visit_counts = [0.0] * TOTAL_ACTIONS
-            visit_counts[action] = 1.0
-            return action, visit_counts
 
         root = AlphaMCTSNode(
             game=game, parent=None, action=None, depth=0,
@@ -102,6 +94,17 @@ class AlphaMCTSAgent(RuleBasedAgent):
 
     def _expand(self, node: AlphaMCTSNode) -> AlphaMCTSNode:
         action = node.untried_actions.pop()
+
+        # Compute prior from PARENT state before stepping (correct AlphaZero pattern)
+        parent_obs = torch.tensor(
+            compute_observation(node.game, self._player_name), dtype=torch.float32
+        )
+        parent_mask_np = compute_mask(node.game, self._player_name)
+        parent_mask = torch.tensor(parent_mask_np, dtype=torch.bool)
+        with torch.no_grad():
+            parent_priors, _ = self._network(parent_obs, parent_mask)
+        child_prior = parent_priors[action].item()
+
         game = _clone(node.game)
         is_terminal = _step_inplace(game, action, self._player_name)
 
@@ -114,29 +117,40 @@ class AlphaMCTSAgent(RuleBasedAgent):
 
         while not is_terminal and game.turn.name != self._player_name:
             opp_name = game.turn.name
-            opp_obs = torch.tensor(compute_observation(game, opp_name), dtype=torch.float32)
             opp_mask_np = compute_mask(game, opp_name)
-            opp_mask = torch.tensor(opp_mask_np, dtype=torch.bool)
-            with torch.no_grad():
-                opp_policy, _ = self._network(opp_obs, opp_mask)
-            opp_action = int(torch.multinomial(opp_policy, 1).item())
+
+            if game.phase == GamePhase.DISCARD:
+                # Rule-based: discard the most-held non-master token
+                opp_player = next(p for p in game.players if p.name == opp_name)
+                tc = Counter(t.name for t in opp_player.tokens)
+                opp_action = None
+                best_count = -1
+                for ptype, idx in DISCARD_ACTION.items():
+                    if opp_mask_np[idx] and ptype != PokeballType.Master:
+                        count = tc.get(ptype, 0)
+                        if count > best_count:
+                            best_count = count
+                            opp_action = idx
+                if opp_action is None:
+                    opp_action = int(np.where(opp_mask_np)[0][0])
+            else:
+                opp_obs = torch.tensor(compute_observation(game, opp_name), dtype=torch.float32)
+                opp_mask = torch.tensor(opp_mask_np, dtype=torch.bool)
+                with torch.no_grad():
+                    opp_policy, _ = self._network(opp_obs, opp_mask)
+                opp_action = int(torch.multinomial(opp_policy, 1).item())
+
             is_terminal = _step_inplace(game, opp_action, opp_name)
 
         if not is_terminal and node.depth + 1 < self._depth:
             child_mask_np = compute_mask(game, self._player_name)
             untried = list(np.where(child_mask_np)[0])
-            child_obs = torch.tensor(compute_observation(game, self._player_name), dtype=torch.float32)
-            child_mask = torch.tensor(child_mask_np, dtype=torch.bool)
-            with torch.no_grad():
-                priors, _ = self._network(child_obs, child_mask)
-            priors_np = priors.numpy()
         else:
             untried = []
-            priors_np = None
 
         child = AlphaMCTSNode(
             game=game, parent=node, action=action,
-            prior=priors_np[action] if priors_np is not None else 1.0,
+            prior=child_prior,
             depth=node.depth + 1, untried_actions=untried,
         )
         node.children[action] = child
@@ -165,7 +179,6 @@ class AlphaMCTSAgent(RuleBasedAgent):
         return node.game.winner is not None
 
     def _best_discard_action(self, game: Game, mask: np.ndarray) -> int:
-        from collections import Counter
         player = next(p for p in game.players if p.name == self._player_name)
         bonuses = get_player_bonuses(player)
         all_slots = (
