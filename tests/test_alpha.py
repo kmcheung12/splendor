@@ -210,3 +210,28 @@ def _make_minimal_game(players, winner):
     )
     game.winner = winner
     return game
+
+
+from pokemon_splendor.agents.alpha_coach import run_self_play_game, SelfPlayRecord
+
+
+def test_self_play_game_returns_records():
+    net = AlphaNet()
+    records = run_self_play_game(Path("data/pokemon.jsonl"), net, num_players=2, n_simulations=5, depth=1)
+    assert len(records) > 0
+
+
+def test_self_play_record_fields():
+    net = AlphaNet()
+    records = run_self_play_game(Path("data/pokemon.jsonl"), net, num_players=2, n_simulations=5, depth=1)
+    r = records[0]
+    assert r.obs.shape == (345,)
+    assert len(r.visit_counts) == 108
+    assert abs(sum(r.visit_counts) - 1.0) < 1e-5
+    assert 0.0 <= r.outcome <= 1.0
+
+
+def test_self_play_game_terminates():
+    net = AlphaNet()
+    records = run_self_play_game(Path("data/pokemon.jsonl"), net, num_players=2, n_simulations=5, depth=1)
+    assert len(records) >= 10
