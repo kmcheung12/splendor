@@ -7,6 +7,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from pokemon_splendor.models import Game
+from pokemon_splendor.agents.alpha_net import TOTAL_ACTIONS
 
 
 def compute_outcomes(game: Game) -> dict[str, float]:
@@ -97,7 +98,7 @@ def train_step(
     outcome_batch = torch.tensor(
         [r.outcome for r in batch], dtype=torch.float32
     )
-    mask_batch = torch.ones(len(batch), 108, dtype=torch.bool)
+    mask_batch = (visit_batch > 0)
 
     policy, value = network(obs_batch, mask_batch)
 
