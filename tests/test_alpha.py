@@ -312,5 +312,5 @@ def test_alpha_coach_saves_checkpoint():
         )
         coach.run()
         files = os.listdir(tmpdir)
-        pt_files = [f for f in files if f.endswith(".pt")]
-        assert len(pt_files) == 2
+        pt_files = {f for f in files if f.endswith(".pt")}
+        assert pt_files == {"alpha_0001.pt", "alpha_0002.pt"}

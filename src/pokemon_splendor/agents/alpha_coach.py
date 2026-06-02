@@ -114,9 +114,6 @@ def train_step(
     return policy_loss.item(), value_loss.item()
 
 
-import os
-
-
 class AlphaCoach:
     def __init__(
         self,
@@ -140,8 +137,8 @@ class AlphaCoach:
         self._batch_size = batch_size
         self._buffer_size = buffer_size
         self._lr = lr
-        self._checkpoint_dir = checkpoint_dir
-        os.makedirs(checkpoint_dir, exist_ok=True)
+        self._checkpoint_dir = Path(checkpoint_dir)
+        self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self) -> None:
         network = AlphaNet()
@@ -160,7 +157,8 @@ class AlphaCoach:
                     n_simulations=self._n_simulations,
                     depth=self._depth,
                 )
-                replay_buffer.extend(records)
+                if records:
+                    replay_buffer.extend(records)
                 print(f"  game {game_num}/{self._games_per_iteration} — {len(records)} records", flush=True)
 
             # Train
@@ -170,6 +168,6 @@ class AlphaCoach:
                 print(f"  policy_loss={policy_loss:.4f}  value_loss={value_loss:.4f}")
 
             # Checkpoint
-            path = os.path.join(self._checkpoint_dir, f"alpha_{iteration:04d}.pt")
-            network.save(path)
+            path = self._checkpoint_dir / f"alpha_{iteration:04d}.pt"
+            network.save(str(path))
             print(f"  saved {path}")
