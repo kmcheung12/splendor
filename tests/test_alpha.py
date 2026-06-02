@@ -155,6 +155,48 @@ def test_compute_outcomes_clamped_to_zero():
     assert outcomes["player_1"] == 0.0
 
 
+from pathlib import Path
+from pokemon_splendor.engine.env import PokemonSplendorEnv
+from pokemon_splendor.agents.alpha_mcts import AlphaMCTSAgent
+from pokemon_splendor.agents.alpha_net import AlphaNet as _AlphaNet
+
+
+def _make_env_and_agent(n_sims=10):
+    env = PokemonSplendorEnv(Path("data/pokemon.jsonl"), num_players=2)
+    env.reset()
+    name = env.agent_selection
+    net = _AlphaNet()
+    agent = AlphaMCTSAgent(env, name, network=net, n_simulations=n_sims, depth=2)
+    return env, agent, name
+
+
+def test_alpha_mcts_returns_valid_action():
+    env, agent, name = _make_env_and_agent()
+    obs, _, _, _, _ = env.last()
+    mask = env.action_mask(name)
+    action, visit_counts = agent.act(obs, mask)
+    assert mask[action], "chosen action must be valid"
+
+
+def test_alpha_mcts_visit_counts_shape():
+    env, agent, name = _make_env_and_agent()
+    obs, _, _, _, _ = env.last()
+    mask = env.action_mask(name)
+    action, visit_counts = agent.act(obs, mask)
+    assert len(visit_counts) == 108
+    assert abs(sum(visit_counts) - 1.0) < 1e-5
+
+
+def test_alpha_mcts_visit_counts_only_valid():
+    env, agent, name = _make_env_and_agent()
+    obs, _, _, _, _ = env.last()
+    mask = env.action_mask(name)
+    action, visit_counts = agent.act(obs, mask)
+    for i, prob in enumerate(visit_counts):
+        if not mask[i]:
+            assert prob == 0.0, f"invalid action {i} has non-zero visit count"
+
+
 def _make_minimal_game(players, winner):
     from pokemon_splendor.models import Board, PokeballType, GamePhase
     board = Board()
