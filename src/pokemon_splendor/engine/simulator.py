@@ -24,7 +24,7 @@ def _step_inplace(game: Game, action: int, player_name: str) -> bool:
     """Apply action in-place. Returns True if game is now terminal."""
     player = next(p for p in game.players if p.name == player_name)
     _apply_action(game, player, action)
-    return _process_transitions(game, player, player_name)
+    return _process_transitions(game, player)
 
 
 def _apply_action(game: Game, player: Player, action: int) -> None:
@@ -46,12 +46,6 @@ def _apply_action(game: Game, player: Player, action: int) -> None:
     # MAIN phase
     if action == EVOLVE_PASS:
         return
-    if DISCARD_START <= action < EVOLVE_START:
-        for ptype, idx in DISCARD_ACTION.items():
-            if action == idx:
-                apply_discard(game, player, ptype)
-                return
-        raise ValueError(f"Invalid discard action {action}")
     if TAKE_DIFF_START <= action < TAKE_SAME_START:
         combo = TAKE_DIFF_COMBOS[action - TAKE_DIFF_START]
         apply_take_different_tokens(game, player, list(combo))
@@ -87,6 +81,8 @@ def _apply_action(game: Game, player: Player, action: int) -> None:
         )
         pokemon = all_slots[slot_idx]
         apply_reserve(game, player, pokemon, board_slot=slot_idx, take_master=False)
+    else:
+        raise ValueError(f"Unrecognized MAIN action {action}")
 
 
 def _catch_preserving_bonus_points(
@@ -105,7 +101,7 @@ def _catch_preserving_bonus_points(
         player.points += bonus_points
 
 
-def _process_transitions(game: Game, player: Player, player_name: str) -> bool:
+def _process_transitions(game: Game, player: Player) -> bool:
     if game.phase == GamePhase.EVOLVE:
         return _end_turn(game, player)
     if game.phase == GamePhase.DISCARD:
@@ -146,7 +142,7 @@ def _end_turn(game: Game, player: Player) -> bool:
         last_in_round_idx = (starting_idx - 1) % len(game.players)
         last_in_round = game.players[last_in_round_idx]
         if player is last_in_round:
-            game.winner = check_win_condition(game)
+            game.winner = winner or check_win_condition(game)
             return True
 
     idx = game.players.index(player)
