@@ -239,7 +239,7 @@ Horizontal strip on the panel edge. Left to right:
 
 - The active player's panel has a glowing highlight border.
 - A small **status chip** floats near the top of the board showing: `▶ Alan — MAIN`.
-- During MCTS think time: chip changes to `⟳ mcts — thinking…`
+- During MCTS compute time or the configured inter-turn delay: chip changes to `⟳ mcts — thinking…`
 - During a human player's turn before they act: chip shows `⟳ Alan — thinking…`
 
 ### Game over
