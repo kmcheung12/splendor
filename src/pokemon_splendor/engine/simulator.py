@@ -46,6 +46,13 @@ def _apply_action(game: Game, player: Player, action: int) -> None:
     # MAIN phase
     if action == EVOLVE_PASS:
         return
+    # Fallback: compute_mask returns DISCARD actions when no normal MAIN actions are valid
+    if DISCARD_START <= action < EVOLVE_START:
+        for ptype, idx in DISCARD_ACTION.items():
+            if action == idx:
+                apply_discard(game, player, ptype)
+                return
+        raise ValueError(f"Invalid discard action {action}")
     if TAKE_DIFF_START <= action < TAKE_SAME_START:
         combo = TAKE_DIFF_COMBOS[action - TAKE_DIFF_START]
         apply_take_different_tokens(game, player, list(combo))
