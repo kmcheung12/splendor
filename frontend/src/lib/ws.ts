@@ -40,7 +40,7 @@ function handleMessage(msg: ServerMessage): void {
   switch (msg.type) {
     case 'lobby':
       lobbyState.set(msg)
-      if (msg.is_host) isHost.set(true)
+      isHost.set(!!msg.is_host)
       break
 
     case 'state':
