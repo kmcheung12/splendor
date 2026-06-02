@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [svelte()],
   server: {
     proxy: {
-      '/game': 'http://localhost:8000',
-      '/join': 'http://localhost:8000',
+      '/game': { target: 'http://localhost:8000', changeOrigin: true },
+      '/join': { target: 'http://localhost:8000', changeOrigin: true },
       '/ws': { target: 'ws://localhost:8000', ws: true },
     },
   },
