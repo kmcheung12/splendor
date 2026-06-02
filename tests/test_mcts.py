@@ -181,3 +181,94 @@ def test_game_step_terminal_on_18_points():
     new_game, is_terminal = game_step(game, catch_action, agent)
     # Terminal happens at end of round; check that win_triggered is at least set
     assert new_game.win_triggered or is_terminal
+
+
+from pokemon_splendor.agents.mcts import MCTSAgent, make_early_capture_policy
+
+
+def test_mcts_prune_tokens_no_short_combos():
+    """Pruned actions must not contain 1- or 2-token TAKE_DIFF combos."""
+    from pokemon_splendor.engine.actions import TAKE_DIFF_COMBOS, TAKE_DIFF_START
+    env = _make_env_game()
+    agent_name = env.agent_selection
+    agent = MCTSAgent(env, agent_name, n_simulations=1, depth=1)
+    game = env.game
+    player = next(p for p in game.players if p.name == agent_name)
+    pruned = agent._prune_actions(game, player)
+    for action in pruned:
+        if TAKE_DIFF_START <= action < TAKE_DIFF_START + len(TAKE_DIFF_COMBOS):
+            combo = TAKE_DIFF_COMBOS[action - TAKE_DIFF_START]
+            assert len(combo) == 3, f"Found {len(combo)}-token combo in pruned actions"
+
+
+def test_mcts_prune_reserve_master_preferred():
+    """If RESERVE_MASTER is valid for a slot, RESERVE_NO_MASTER for same slot must be excluded."""
+    from pokemon_splendor.engine.actions import RESERVE_MASTER_START, RESERVE_NO_MASTER_START
+    env = _make_env_game()
+    agent_name = env.agent_selection
+    agent = MCTSAgent(env, agent_name, n_simulations=1, depth=1)
+    game = env.game
+    player = next(p for p in game.players if p.name == agent_name)
+    pruned = set(agent._prune_actions(game, player))
+    for slot_idx in range(12):
+        master_action = RESERVE_MASTER_START + slot_idx
+        no_master_action = RESERVE_NO_MASTER_START + slot_idx
+        if master_action in pruned:
+            assert no_master_action not in pruned, (
+                f"Both RESERVE_MASTER and RESERVE_NO_MASTER present for slot {slot_idx}"
+            )
+
+
+def test_mcts_prune_reserve_max_five():
+    """At most 5 reserve actions in pruned set."""
+    from pokemon_splendor.engine.actions import RESERVE_MASTER_START, DISCARD_START
+    env = _make_env_game()
+    agent_name = env.agent_selection
+    agent = MCTSAgent(env, agent_name, n_simulations=1, depth=1)
+    game = env.game
+    player = next(p for p in game.players if p.name == agent_name)
+    pruned = agent._prune_actions(game, player)
+    reserve_count = sum(
+        1 for a in pruned if RESERVE_MASTER_START <= a < DISCARD_START
+    )
+    assert reserve_count <= 5
+
+
+def test_mcts_agent_returns_valid_action():
+    """MCTSAgent.act() must always return an action that is valid per the mask."""
+    env = _make_env_game()
+    agent_name = env.agent_selection
+    agent = MCTSAgent(env, agent_name, n_simulations=50, depth=2)
+    obs, _, _, _, _ = env.last()
+    mask = env.action_mask(agent_name)
+    action = agent.act(obs, mask)
+    assert mask[action], f"Action {action} is not valid per mask"
+
+
+def test_mcts_agent_beats_random():
+    """MCTSAgent (200 sims, depth 4) should win >60% vs random over 30 games."""
+    import random as pyrandom
+    wins = 0
+    games = 30
+    for _ in range(games):
+        env = PokemonSplendorEnv(jsonl_path=JSONL, num_players=2)
+        env.reset()
+        mcts_name = env.possible_agents[0]
+        mcts_agent = MCTSAgent(env, mcts_name, n_simulations=200, depth=4)
+        for _ in range(10000):
+            if not env.agents:
+                break
+            name = env.agent_selection
+            obs, _, term, trunc, _ = env.last()
+            if term or trunc:
+                break
+            mask = env.action_mask(name)
+            if name == mcts_name:
+                action = mcts_agent.act(obs, mask)
+            else:
+                action = int(pyrandom.choice(np.where(mask)[0]))
+            env.step(action)
+        winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
+        if winner.name == mcts_name:
+            wins += 1
+    assert wins / games >= 0.60, f"MCTSAgent only won {wins}/{games} vs random"
