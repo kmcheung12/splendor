@@ -272,3 +272,45 @@ def test_train_step_updates_weights():
     train_step(net, optimizer, batch)
     after = net.value_head.weight.data
     assert not torch.allclose(before, after)
+
+
+import tempfile
+import os
+from pokemon_splendor.agents.alpha_coach import AlphaCoach
+
+
+def test_alpha_coach_runs_one_iteration():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        coach = AlphaCoach(
+            jsonl_path=Path("data/pokemon.jsonl"),
+            num_players=2,
+            n_iterations=1,
+            games_per_iteration=2,
+            n_simulations=5,
+            depth=1,
+            batch_size=4,
+            buffer_size=100,
+            checkpoint_dir=tmpdir,
+        )
+        coach.run()
+        files = os.listdir(tmpdir)
+        assert any(f.endswith(".pt") for f in files)
+
+
+def test_alpha_coach_saves_checkpoint():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        coach = AlphaCoach(
+            jsonl_path=Path("data/pokemon.jsonl"),
+            num_players=2,
+            n_iterations=2,
+            games_per_iteration=2,
+            n_simulations=5,
+            depth=1,
+            batch_size=4,
+            buffer_size=100,
+            checkpoint_dir=tmpdir,
+        )
+        coach.run()
+        files = os.listdir(tmpdir)
+        pt_files = [f for f in files if f.endswith(".pt")]
+        assert len(pt_files) == 2

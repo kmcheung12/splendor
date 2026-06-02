@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from pokemon_splendor.models import Game
-from pokemon_splendor.agents.alpha_net import TOTAL_ACTIONS
+from pokemon_splendor.agents.alpha_net import AlphaNet, TOTAL_ACTIONS
 
 
 def compute_outcomes(game: Game) -> dict[str, float]:
@@ -112,3 +112,64 @@ def train_step(
 
     network.eval()
     return policy_loss.item(), value_loss.item()
+
+
+import os
+
+
+class AlphaCoach:
+    def __init__(
+        self,
+        jsonl_path: Path,
+        num_players: int = 2,
+        n_iterations: int = 100,
+        games_per_iteration: int = 20,
+        n_simulations: int = 100,
+        depth: int = 4,
+        batch_size: int = 256,
+        buffer_size: int = 2000,
+        lr: float = 0.001,
+        checkpoint_dir: str = "checkpoints",
+    ):
+        self._jsonl_path = jsonl_path
+        self._num_players = num_players
+        self._n_iterations = n_iterations
+        self._games_per_iteration = games_per_iteration
+        self._n_simulations = n_simulations
+        self._depth = depth
+        self._batch_size = batch_size
+        self._buffer_size = buffer_size
+        self._lr = lr
+        self._checkpoint_dir = checkpoint_dir
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
+    def run(self) -> None:
+        network = AlphaNet()
+        network.eval()
+        optimizer = torch.optim.Adam(network.parameters(), lr=self._lr)
+        replay_buffer: deque[SelfPlayRecord] = deque(maxlen=self._buffer_size)
+
+        for iteration in range(1, self._n_iterations + 1):
+            print(f"\n[Iteration {iteration}/{self._n_iterations}]")
+
+            # Self-play
+            for game_num in range(1, self._games_per_iteration + 1):
+                records = run_self_play_game(
+                    self._jsonl_path, network,
+                    num_players=self._num_players,
+                    n_simulations=self._n_simulations,
+                    depth=self._depth,
+                )
+                replay_buffer.extend(records)
+                print(f"  game {game_num}/{self._games_per_iteration} — {len(records)} records", flush=True)
+
+            # Train
+            if len(replay_buffer) >= self._batch_size:
+                batch = random.sample(list(replay_buffer), self._batch_size)
+                policy_loss, value_loss = train_step(network, optimizer, batch)
+                print(f"  policy_loss={policy_loss:.4f}  value_loss={value_loss:.4f}")
+
+            # Checkpoint
+            path = os.path.join(self._checkpoint_dir, f"alpha_{iteration:04d}.pt")
+            network.save(path)
+            print(f"  saved {path}")
