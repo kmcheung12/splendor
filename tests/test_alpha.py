@@ -102,3 +102,69 @@ def test_alpha_net_load_sets_eval_mode():
         net_loaded = AlphaNet.load(path)
 
     assert net_loaded.training == False
+
+
+from pokemon_splendor.agents.alpha_coach import compute_outcomes
+from pokemon_splendor.models import Game, Player, Pokemon, Board, PokeballType, Tier, PokeballToken, GamePhase
+
+
+def _make_player(name: str, points: int, n_cards: int) -> Player:
+    cards = []
+    for i in range(n_cards):
+        p = Pokemon(
+            name=f"card_{i}", tier=Tier.Common, cost=[], bonus=[], evolve=[],
+            evolve_into=None, point=0,
+        )
+        cards.append(p)
+    player = Player(name=name)
+    player.points = points
+    player.cards = cards
+    return player
+
+
+def test_compute_outcomes_winner_gets_one():
+    p1 = _make_player("player_0", 20, 10)
+    p2 = _make_player("player_1", 15, 8)
+    game = _make_minimal_game([p1, p2], winner=p1)
+    outcomes = compute_outcomes(game)
+    assert outcomes["player_0"] == 1.0
+
+
+def test_compute_outcomes_normalised_by_winner_score():
+    p1 = _make_player("player_0", 20, 10)
+    p2 = _make_player("player_1", 10, 10)
+    game = _make_minimal_game([p1, p2], winner=p1)
+    outcomes = compute_outcomes(game)
+    assert abs(outcomes["player_1"] - 0.5) < 1e-6
+
+
+def test_compute_outcomes_card_delta():
+    p1 = _make_player("player_0", 20, 10)
+    p2 = _make_player("player_1", 20, 12)
+    game = _make_minimal_game([p1, p2], winner=p1)
+    outcomes = compute_outcomes(game)
+    # p2: 20/20 + (12-10)*0.001 = 1.002 → clamped to 1.0
+    assert outcomes["player_1"] == 1.0
+
+
+def test_compute_outcomes_clamped_to_zero():
+    p1 = _make_player("player_0", 20, 10)
+    p2 = _make_player("player_1", 0, 0)
+    game = _make_minimal_game([p1, p2], winner=p1)
+    outcomes = compute_outcomes(game)
+    assert outcomes["player_1"] == 0.0
+
+
+def _make_minimal_game(players, winner):
+    from pokemon_splendor.models import Board, PokeballType, GamePhase
+    board = Board()
+    game = Game(
+        players=players,
+        turn=players[0],
+        starting_player=players[0],
+        round=1,
+        board=board,
+        tokens={pt: 4 for pt in PokeballType},
+    )
+    game.winner = winner
+    return game
