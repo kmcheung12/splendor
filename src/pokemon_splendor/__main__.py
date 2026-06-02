@@ -16,7 +16,8 @@ AGENT_TYPES = (
     "evolution-chain scores cards by full evolution chain value\n"
     "denial          reserves cards opponents can almost afford\n"
     "mcts            MCTS with shortfall eval, 200 simulations (default)\n"
-    "<model>.zip     any .zip path loads that trained RL model"
+    "<model>.zip     any .zip path loads that trained RL model\n"
+    "alpha:<path>    AlphaZero agent loaded from a .pt checkpoint"
 )
 
 
@@ -130,9 +131,8 @@ def _call_agent(agent, obs, mask) -> int:
     if callable(agent):
         return agent(obs, mask)
     result = agent.act(obs, mask)
-    if isinstance(result, tuple):
-        return result[0]
-    return result
+    # AlphaMCTSAgent.act() returns (action, visit_counts); unwrap if needed
+    return result if isinstance(result, int) else result[0]
 
 
 def _print_round_summary(possible_agents, current_agent, last_desc):
