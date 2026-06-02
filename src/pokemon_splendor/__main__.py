@@ -30,7 +30,7 @@ def main():
                         help="Comma-separated agent types for play/benchmark (see below)")
     parser.add_argument("--agents", default=None,
                         help="Alias for --players (used in train mode)")
-    parser.add_argument("--mode", choices=["play", "train", "benchmark", "data"], default="play")
+    parser.add_argument("--mode", choices=["play", "train", "benchmark", "data", "alpha-train"], default="play")
     parser.add_argument("--games", type=int, default=100)
     parser.add_argument("--episodes", type=int, default=100000)
     parser.add_argument("--save", default="model.zip")
@@ -40,6 +40,22 @@ def main():
                         help="Path to existing model.zip to continue training")
     parser.add_argument("--lr", type=float, default=0.0001,
                         help="Learning rate (default 0.0001)")
+    parser.add_argument("--mcts-sims", type=int, default=200,
+                        help="MCTS simulations per move (default 200)")
+    parser.add_argument("--mcts-depth", type=int, default=4,
+                        help="MCTS cutoff depth in agent turns (default 4)")
+    parser.add_argument("--mcts-opponent", default=None,
+                        help="Opponent model for MCTS simulations: 'early-capture' (default) or a .zip model path")
+    parser.add_argument("--alpha-iters", type=int, default=100,
+                        help="Alpha training: number of self-play iterations")
+    parser.add_argument("--alpha-games", type=int, default=20,
+                        help="Alpha training: self-play games per iteration")
+    parser.add_argument("--alpha-sims", type=int, default=100,
+                        help="Alpha training: MCTS simulations per move")
+    parser.add_argument("--alpha-depth", type=int, default=4,
+                        help="Alpha training: MCTS cutoff depth")
+    parser.add_argument("--alpha-checkpoint-dir", default="alpha_checkpoints",
+                        help="Alpha training: directory for .pt checkpoint files")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--data", default="data/pokemon.jsonl")
     args = parser.parse_args()
@@ -56,12 +72,19 @@ def main():
         opponent_types = [a.strip() for a in args.opponents.split(",")]
         _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr)
     elif args.mode == "benchmark":
-        _run_benchmark(jsonl, agent_types, args.games, render_mode)
+        _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
+    elif args.mode == "alpha-train":
+        _run_alpha_train(
+            jsonl, args.alpha_iters, args.alpha_games,
+            args.alpha_sims, args.alpha_depth,
+            len(agent_types), args.alpha_checkpoint_dir,
+        )
     else:
-        _run_game(jsonl, agent_types, render_mode)
+        _run_game(jsonl, agent_types, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
 
 
-def _make_agent(agent_type: str, env=None, player_name: str = None):
+def _make_agent(agent_type: str, env=None, player_name: str = None,
+                mcts_sims: int = 200, mcts_depth: int = 4, mcts_opponent: str | None = None):
     if agent_type == "random":
         return lambda obs, mask: int(np.random.choice(np.where(mask)[0]))
     if agent_type == "human":
@@ -83,8 +106,20 @@ def _make_agent(agent_type: str, env=None, player_name: str = None):
         from pokemon_splendor.agents.denial import DenialAgent
         return DenialAgent(env, player_name)
     if agent_type == "mcts":
-        from pokemon_splendor.agents.mcts import MCTSAgent
-        return MCTSAgent(env, player_name)
+        from pokemon_splendor.agents.mcts import MCTSAgent, make_early_capture_policy, make_rl_policy
+        if mcts_opponent and mcts_opponent.endswith(".zip"):
+            opponent_policy = make_rl_policy(mcts_opponent)
+        else:
+            opponent_policy = make_early_capture_policy()
+        return MCTSAgent(env, player_name, n_simulations=mcts_sims, depth=mcts_depth,
+                         opponent_policy=opponent_policy)
+    if agent_type.startswith("alpha:"):
+        model_path = agent_type.split(":", 1)[1]
+        from pokemon_splendor.agents.alpha_net import AlphaNet
+        from pokemon_splendor.agents.alpha_mcts import AlphaMCTSAgent
+        net = AlphaNet.load(model_path)
+        return AlphaMCTSAgent(env, player_name, network=net,
+                              n_simulations=mcts_sims, depth=mcts_depth)
     if agent_type.endswith(".zip"):
         from pokemon_splendor.agents.rl import RLAgent
         return RLAgent(agent_type)
@@ -94,7 +129,10 @@ def _make_agent(agent_type: str, env=None, player_name: str = None):
 def _call_agent(agent, obs, mask) -> int:
     if callable(agent):
         return agent(obs, mask)
-    return agent.act(obs, mask)
+    result = agent.act(obs, mask)
+    if isinstance(result, tuple):
+        return result[0]
+    return result
 
 
 def _print_round_summary(possible_agents, current_agent, last_desc):
@@ -109,12 +147,13 @@ def _print_round_summary(possible_agents, current_agent, last_desc):
             c.print(f"  [dim]{name}[/] {desc}" if desc else f"  [dim]{name}[/] —")
 
 
-def _run_game(jsonl: Path, agent_types: list[str], render_mode: str | None):
+def _run_game(jsonl: Path, agent_types: list[str], render_mode: str | None,
+              mcts_sims: int = 200, mcts_depth: int = 4, mcts_opponent: str | None = None):
     from pokemon_splendor.agents.base import describe_action
     env = PokemonSplendorEnv(jsonl, num_players=len(agent_types), render_mode=render_mode)
     env.reset()
     agents_map = {
-        name: _make_agent(atype, env=env, player_name=name)
+        name: _make_agent(atype, env=env, player_name=name, mcts_sims=mcts_sims, mcts_depth=mcts_depth, mcts_opponent=mcts_opponent)
         for name, atype in zip(env.possible_agents, agent_types)
     }
     human_agents = {name for name, atype in zip(env.possible_agents, agent_types) if atype == "human"}
@@ -170,31 +209,44 @@ def _run_game(jsonl: Path, agent_types: list[str], render_mode: str | None):
     c.print(table)
 
 
-def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_mode):
+def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_mode,
+                   mcts_sims: int = 200, mcts_depth: int = 4, mcts_opponent: str | None = None):
     wins = {i: 0 for i in range(len(agent_types))}
-    for _ in range(num_games):
-        env = PokemonSplendorEnv(jsonl, num_players=len(agent_types), render_mode=render_mode)
-        env.reset()
-        agents_map = {
-            name: _make_agent(t, env=env, player_name=name)
-            for name, t in zip(env.possible_agents, agent_types)
-        }
-        for _ in range(MAX_STEPS):
-            if not env.agents:
-                break
-            name = env.agent_selection
-            obs, _, term, trunc, _ = env.last()
-            if term or trunc:
-                break
-            mask = env.action_mask(name)
-            env.step(_call_agent(agents_map[name], obs, mask))
-        winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
-        idx = env.possible_agents.index(winner.name)
-        wins[idx] += 1
+    completed = 0
 
-    print("\nBenchmark Results:")
-    for i, atype in enumerate(agent_types):
-        print(f"  {atype}: {wins[i]}/{num_games} wins ({100*wins[i]/num_games:.1f}%)")
+    def _print_results():
+        played = completed
+        print(f"\nBenchmark Results ({played}/{num_games} games):")
+        for i, atype in enumerate(agent_types):
+            pct = 100 * wins[i] / played if played else 0.0
+            print(f"  {atype}: {wins[i]}/{played} wins ({pct:.1f}%)")
+
+    try:
+        for game_num in range(1, num_games + 1):
+            env = PokemonSplendorEnv(jsonl, num_players=len(agent_types), render_mode=render_mode)
+            env.reset()
+            agents_map = {
+                name: _make_agent(t, env=env, player_name=name, mcts_sims=mcts_sims, mcts_depth=mcts_depth, mcts_opponent=mcts_opponent)
+                for name, t in zip(env.possible_agents, agent_types)
+            }
+            for _ in range(MAX_STEPS):
+                if not env.agents:
+                    break
+                name = env.agent_selection
+                obs, _, term, trunc, _ = env.last()
+                if term or trunc:
+                    break
+                mask = env.action_mask(name)
+                env.step(_call_agent(agents_map[name], obs, mask))
+            winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
+            idx = env.possible_agents.index(winner.name)
+            wins[idx] += 1
+            completed += 1
+            print(f"\r  {game_num}/{num_games} ({100*game_num/num_games:.0f}%)", end="", flush=True)
+    except KeyboardInterrupt:
+        pass
+
+    _print_results()
 
 
 def _run_train(jsonl: Path, episodes: int, save_path: str,
@@ -226,6 +278,23 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
     model.learn(total_timesteps=episodes)
     model.save(save_path)
     print(f"\nModel saved to {save_path}")
+
+
+def _run_alpha_train(
+    jsonl: Path, n_iterations: int, games_per_iteration: int,
+    n_simulations: int, depth: int, num_players: int, checkpoint_dir: str,
+):
+    from pokemon_splendor.agents.alpha_coach import AlphaCoach
+    coach = AlphaCoach(
+        jsonl_path=jsonl,
+        num_players=num_players,
+        n_iterations=n_iterations,
+        games_per_iteration=games_per_iteration,
+        n_simulations=n_simulations,
+        depth=depth,
+        checkpoint_dir=checkpoint_dir,
+    )
+    coach.run()
 
 
 if __name__ == "__main__":
