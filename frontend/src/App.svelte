@@ -17,29 +17,43 @@
 
   const AGENT_OPTIONS = ['random', 'early-capture', 'high-point', 'bonus-engine', 'evolution-chain', 'denial', 'mcts']
 
-  async function createGame() {
-    const res = await fetch('/game/new', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        num_players: numPlayers,
-        agent_types: agentTypes.slice(0, numPlayers),
-        delay_ms: delayMs,
-      }),
-    })
-    const data = await res.json()
-    gameId = data.game_id
-    connect(gameId)
-    view = 'lobby'
-  }
+  let error: string | null = null
 
-  async function joinGame(code: string) {
-    const res = await fetch(`/join/${code}`)
-    const data = await res.json()
-    if (data.game_id) {
+  async function createGame() {
+    error = null
+    try {
+      const res = await fetch('/game/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          num_players: numPlayers,
+          agent_types: agentTypes.slice(0, numPlayers),
+          delay_ms: delayMs,
+        }),
+      })
+      if (!res.ok) throw new Error(`Server error: ${res.status}`)
+      const data = await res.json()
       gameId = data.game_id
       connect(gameId)
       view = 'lobby'
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to create game'
+    }
+  }
+
+  async function joinGame(code: string) {
+    if (!code.trim()) return
+    error = null
+    try {
+      const res = await fetch(`/join/${code.toUpperCase()}`)
+      if (!res.ok) throw new Error('Invalid code or game not found')
+      const data = await res.json()
+      if (!data.game_id) throw new Error('Invalid code or game not found')
+      gameId = data.game_id
+      connect(gameId)
+      view = 'lobby'
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to join game'
     }
   }
 
@@ -50,6 +64,9 @@
   {#if view === 'setup'}
     <div class="setup">
       <h1>Pokemon Splendor</h1>
+      {#if error}
+        <div class="error">{error}</div>
+      {/if}
 
       <section>
         <h2>Create Game</h2>
@@ -68,7 +85,7 @@
       <section>
         <h2>Join Game</h2>
         <input placeholder="Join code" bind:value={joinCode} maxlength={4} style="text-transform:uppercase" />
-        <button on:click={() => joinGame(joinCode)}>Join</button>
+        <button on:click={() => joinGame(joinCode)} disabled={!joinCode.trim()}>Join</button>
       </section>
     </div>
 
@@ -113,6 +130,8 @@
   input, select { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 4px; color: white; padding: 4px 8px; }
   button { background: #27ae60; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: .9rem; }
   button:hover { background: #2ecc71; }
+  button:disabled { background: #555; cursor: not-allowed; }
+  .error { background: rgba(231,76,60,.2); border: 1px solid rgba(231,76,60,.4); color: #e74c3c; border-radius: 6px; padding: 8px 12px; font-size: .85rem; }
   .game-layout { display: flex; flex-direction: column; min-height: 100vh; padding: 8px; gap: 8px; }
   .center { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
 </style>
