@@ -129,6 +129,8 @@ class AlphaCoach:
         buffer_size: int = 2000,
         lr: float = 0.001,
         checkpoint_dir: str = "checkpoints",
+        resume_from: str | None = None,
+        start_iteration: int = 1,
     ):
         self._jsonl_path = jsonl_path
         self._num_players = num_players
@@ -141,14 +143,20 @@ class AlphaCoach:
         self._lr = lr
         self._checkpoint_dir = Path(checkpoint_dir)
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self._resume_from = resume_from
+        self._start_iteration = start_iteration
 
     def run(self) -> None:
-        network = AlphaNet()
+        if self._resume_from:
+            network = AlphaNet.load(self._resume_from)
+            print(f"Resumed from {self._resume_from}")
+        else:
+            network = AlphaNet()
         network.eval()
         optimizer = torch.optim.Adam(network.parameters(), lr=self._lr)
         replay_buffer: deque[SelfPlayRecord] = deque(maxlen=self._buffer_size)
 
-        for iteration in range(1, self._n_iterations + 1):
+        for iteration in range(self._start_iteration, self._n_iterations + 1):
             print(f"\n[Iteration {iteration}/{self._n_iterations}]")
 
             # Self-play
