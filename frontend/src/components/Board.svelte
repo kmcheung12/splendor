@@ -109,7 +109,7 @@
         <div class="deck-label">Epic</div>
         <span class="deck-count">{board.epic_deck_count}</span>
       </div>
-      {#each board.epic_revealed as card, slotIdx (card?.name ?? `empty-epic-${slotIdx}`)}
+      {#each board.epic_revealed as card, slotIdx (`epic-${slotIdx}`)}
         <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
           <CardSlot {card} tier="epic"
             highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, 'epic')}
@@ -121,7 +121,7 @@
         <div class="deck-label">Leg.</div>
         <span class="deck-count">{board.legendary_deck_count}</span>
       </div>
-      {#each board.legendary_revealed as card, slotIdx (card?.name ?? `empty-legendary-${slotIdx}`)}
+      {#each board.legendary_revealed as card, slotIdx (`legendary-${slotIdx}`)}
         <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
           <CardSlot {card} tier="legendary"
             highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, 'legendary')}
@@ -137,7 +137,7 @@
         <div class="card-cell deck-back tier-{row.tier}">
           <span class="deck-count">{row.deckCount}</span>
         </div>
-        {#each row.revealed as card, slotIdx (card?.name ?? `empty-${row.tier}-${slotIdx}`)}
+        {#each row.revealed as card, slotIdx (`${row.tier}-${slotIdx}`)}
           <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
             <CardSlot {card} tier={row.tier}
               highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, row.tier)}
