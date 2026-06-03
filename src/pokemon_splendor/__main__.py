@@ -79,7 +79,7 @@ def main():
         opponent_types = [a.strip() for a in args.opponents.split(",")]
         _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers)
     elif args.mode == "benchmark":
-        _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
+        _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent, args.workers)
     elif args.mode == "alpha-train":
         _run_alpha_train(
             jsonl, args.alpha_iters, args.alpha_games,
@@ -214,44 +214,61 @@ def _run_game(jsonl: Path, agent_types: list[str], render_mode: str | None,
     c.print(table)
 
 
-def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_mode,
-                   mcts_sims: int = 200, mcts_depth: int = 4, mcts_opponent: str | None = None):
-    wins = {i: 0 for i in range(len(agent_types))}
-    completed = 0
+def _run_one_benchmark_game(args: tuple) -> int:
+    jsonl, agent_types, mcts_sims, mcts_depth, mcts_opponent = args
+    env = PokemonSplendorEnv(jsonl, num_players=len(agent_types))
+    env.reset()
+    agents_map = {
+        name: _make_agent(t, env=env, player_name=name, mcts_sims=mcts_sims,
+                          mcts_depth=mcts_depth, mcts_opponent=mcts_opponent)
+        for name, t in zip(env.possible_agents, agent_types)
+    }
+    for _ in range(MAX_STEPS):
+        if not env.agents:
+            break
+        name = env.agent_selection
+        obs, _, term, trunc, _ = env.last()
+        if term or trunc:
+            break
+        env.step(_call_agent(agents_map[name], obs, env.action_mask(name)))
+    winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
+    return env.possible_agents.index(winner.name)
 
-    def _print_results():
-        played = completed
+
+def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_mode,
+                   mcts_sims: int = 200, mcts_depth: int = 4, mcts_opponent: str | None = None,
+                   n_workers: int = 1):
+    wins = {i: 0 for i in range(len(agent_types))}
+
+    def _print_results(played: int):
         print(f"\nBenchmark Results ({played}/{num_games} games):")
         for i, atype in enumerate(agent_types):
             pct = 100 * wins[i] / played if played else 0.0
             print(f"  {atype}: {wins[i]}/{played} wins ({pct:.1f}%)")
 
-    try:
-        for game_num in range(1, num_games + 1):
-            env = PokemonSplendorEnv(jsonl, num_players=len(agent_types), render_mode=render_mode)
-            env.reset()
-            agents_map = {
-                name: _make_agent(t, env=env, player_name=name, mcts_sims=mcts_sims, mcts_depth=mcts_depth, mcts_opponent=mcts_opponent)
-                for name, t in zip(env.possible_agents, agent_types)
-            }
-            for _ in range(MAX_STEPS):
-                if not env.agents:
-                    break
-                name = env.agent_selection
-                obs, _, term, trunc, _ = env.last()
-                if term or trunc:
-                    break
-                mask = env.action_mask(name)
-                env.step(_call_agent(agents_map[name], obs, mask))
-            winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
-            idx = env.possible_agents.index(winner.name)
-            wins[idx] += 1
-            completed += 1
-            print(f"\r  {game_num}/{num_games} ({100*game_num/num_games:.0f}%)", end="", flush=True)
-    except KeyboardInterrupt:
-        pass
+    game_args = [(jsonl, agent_types, mcts_sims, mcts_depth, mcts_opponent)] * num_games
 
-    _print_results()
+    try:
+        if n_workers > 1 and render_mode is None:
+            from multiprocessing import get_context
+            ctx = get_context("spawn")
+            with ctx.Pool(processes=n_workers) as pool:
+                for completed, winner_idx in enumerate(
+                    pool.imap_unordered(_run_one_benchmark_game, game_args), 1
+                ):
+                    wins[winner_idx] += 1
+                    print(f"\r  {completed}/{num_games} ({100*completed/num_games:.0f}%)",
+                          end="", flush=True)
+        else:
+            for completed, args in enumerate(game_args, 1):
+                wins[_run_one_benchmark_game(args)] += 1
+                print(f"\r  {completed}/{num_games} ({100*completed/num_games:.0f}%)",
+                      end="", flush=True)
+    except KeyboardInterrupt:
+        _print_results(sum(wins.values()))
+        return
+
+    _print_results(num_games)
 
 
 def _run_train(jsonl: Path, episodes: int, save_path: str,
