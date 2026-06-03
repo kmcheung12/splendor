@@ -61,6 +61,8 @@ def main():
                         help="Alpha training: .pt checkpoint to resume from")
     parser.add_argument("--alpha-start-iter", type=int, default=1,
                         help="Alpha training: iteration number to resume from (default 1)")
+    parser.add_argument("--alpha-workers", type=int, default=1,
+                        help="Alpha training: number of parallel self-play workers (default 1)")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--data", default="data/pokemon.jsonl")
     args = parser.parse_args()
@@ -83,7 +85,7 @@ def main():
             jsonl, args.alpha_iters, args.alpha_games,
             args.alpha_sims, args.alpha_depth,
             len(agent_types), args.alpha_checkpoint_dir,
-            args.alpha_resume, args.alpha_start_iter,
+            args.alpha_resume, args.alpha_start_iter, args.alpha_workers,
         )
     else:
         _run_game(jsonl, agent_types, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
@@ -286,7 +288,7 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
 def _run_alpha_train(
     jsonl: Path, n_iterations: int, games_per_iteration: int,
     n_simulations: int, depth: int, num_players: int, checkpoint_dir: str,
-    resume_from: str | None = None, start_iteration: int = 1,
+    resume_from: str | None = None, start_iteration: int = 1, n_workers: int = 1,
 ):
     from pokemon_splendor.agents.alpha_coach import AlphaCoach
     coach = AlphaCoach(
@@ -299,6 +301,7 @@ def _run_alpha_train(
         checkpoint_dir=checkpoint_dir,
         resume_from=resume_from,
         start_iteration=start_iteration,
+        n_workers=n_workers,
     )
     coach.run()
 

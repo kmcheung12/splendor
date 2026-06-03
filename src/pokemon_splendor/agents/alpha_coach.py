@@ -116,6 +116,11 @@ def train_step(
     return policy_loss.item(), value_loss.item()
 
 
+def _self_play_worker(args: tuple) -> list[SelfPlayRecord]:
+    jsonl_path, network, num_players, n_simulations, depth = args
+    return run_self_play_game(jsonl_path, network, num_players, n_simulations, depth)
+
+
 class AlphaCoach:
     def __init__(
         self,
@@ -131,6 +136,7 @@ class AlphaCoach:
         checkpoint_dir: str = "checkpoints",
         resume_from: str | None = None,
         start_iteration: int = 1,
+        n_workers: int = 1,
     ):
         self._jsonl_path = jsonl_path
         self._num_players = num_players
@@ -145,6 +151,21 @@ class AlphaCoach:
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self._resume_from = resume_from
         self._start_iteration = start_iteration
+        self._n_workers = n_workers
+
+    def _run_self_play_iteration(self, network: AlphaNet) -> list[list[SelfPlayRecord]]:
+        args = [
+            (self._jsonl_path, network, self._num_players,
+             self._n_simulations, self._depth)
+        ] * self._games_per_iteration
+
+        if self._n_workers > 1:
+            from multiprocessing import get_context
+            ctx = get_context("spawn")
+            with ctx.Pool(processes=self._n_workers) as pool:
+                return pool.map(_self_play_worker, args)
+        else:
+            return [_self_play_worker(a) for a in args]
 
     def run(self) -> None:
         if self._resume_from:
@@ -160,13 +181,8 @@ class AlphaCoach:
             print(f"\n[Iteration {iteration}/{self._n_iterations}]")
 
             # Self-play
-            for game_num in range(1, self._games_per_iteration + 1):
-                records = run_self_play_game(
-                    self._jsonl_path, network,
-                    num_players=self._num_players,
-                    n_simulations=self._n_simulations,
-                    depth=self._depth,
-                )
+            all_game_records = self._run_self_play_iteration(network)
+            for game_num, records in enumerate(all_game_records, 1):
                 if records:
                     replay_buffer.extend(records)
                 print(f"  game {game_num}/{self._games_per_iteration} — {len(records)} records", flush=True)
