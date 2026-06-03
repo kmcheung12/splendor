@@ -13,6 +13,8 @@ from pokemon_splendor.agents.alpha_net import AlphaNet, TOTAL_ACTIONS
 def compute_outcomes(game: Game) -> dict[str, float]:
     winner = game.winner
     winner_score = winner.points
+    if winner_score == 0:
+        return {p.name: 1.0 if p is winner else 0.0 for p in game.players}
     winner_cards = len([c for c in winner.cards if not c.evolved])
     outcomes = {}
     for player in game.players:

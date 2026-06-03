@@ -156,6 +156,15 @@ def test_compute_outcomes_clamped_to_zero():
     assert outcomes["player_1"] == 0.0
 
 
+def test_compute_outcomes_zero_winner_score():
+    p1 = _make_player("player_0", 0, 5)
+    p2 = _make_player("player_1", 0, 3)
+    game = _make_minimal_game([p1, p2], winner=p1)
+    outcomes = compute_outcomes(game)
+    assert outcomes["player_0"] == 1.0
+    assert outcomes["player_1"] == 0.0
+
+
 from pathlib import Path
 from pokemon_splendor.engine.env import PokemonSplendorEnv
 from pokemon_splendor.agents.alpha_mcts import AlphaMCTSAgent
