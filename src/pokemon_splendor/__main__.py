@@ -130,11 +130,7 @@ def _make_agent(agent_type: str, env=None, player_name: str = None,
 def _call_agent(agent, obs, mask) -> int:
     if callable(agent):
         return agent(obs, mask)
-    result = agent.act(obs, mask)
-    # AlphaMCTSAgent.act() returns (action, visit_counts); unwrap if tuple
-    if isinstance(result, tuple):
-        return int(result[0])
-    return int(result)
+    return int(agent.act(obs, mask))
 
 
 def _print_round_summary(possible_agents, current_agent, last_desc):

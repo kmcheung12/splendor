@@ -62,8 +62,8 @@ def run_self_play_game(
         if term or trunc:
             break
         mask = env.action_mask(name)
-        action, visit_counts = agents[name].act(obs, mask)
-        move_records.append((name, obs.copy(), visit_counts))
+        action = agents[name].act(obs, mask)
+        move_records.append((name, obs.copy(), agents[name].last_visit_counts))
         env.step(action)
 
     # Determine winner if not already set (env uses check_win_condition internally

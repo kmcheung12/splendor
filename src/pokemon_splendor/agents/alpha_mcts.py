@@ -40,15 +40,16 @@ class AlphaMCTSAgent(RuleBasedAgent):
         self._network = network
         self._n_simulations = n_simulations
         self._depth = depth
+        self.last_visit_counts: list[float] = [0.0] * TOTAL_ACTIONS
 
-    def act(self, obs: np.ndarray, mask: np.ndarray) -> tuple[int, list[float]]:
+    def act(self, obs: np.ndarray, mask: np.ndarray) -> int:
         game = _clone(self._game)
 
         if game.phase == GamePhase.DISCARD:
             action = self._best_discard_action(game, mask)
-            visit_counts = [0.0] * TOTAL_ACTIONS
-            visit_counts[action] = 1.0
-            return action, visit_counts
+            self.last_visit_counts = [0.0] * TOTAL_ACTIONS
+            self.last_visit_counts[action] = 1.0
+            return action
 
         valid_actions = list(np.where(mask)[0])
 
@@ -61,17 +62,16 @@ class AlphaMCTSAgent(RuleBasedAgent):
 
         if not root.children:
             action = valid_actions[0]
-            visit_counts = [0.0] * TOTAL_ACTIONS
-            visit_counts[action] = 1.0
-            return action, visit_counts
+            self.last_visit_counts = [0.0] * TOTAL_ACTIONS
+            self.last_visit_counts[action] = 1.0
+            return action
 
         total_visits = sum(c.visits for c in root.children.values())
-        visit_counts = [0.0] * TOTAL_ACTIONS
+        self.last_visit_counts = [0.0] * TOTAL_ACTIONS
         for a, child in root.children.items():
-            visit_counts[a] = child.visits / total_visits if total_visits > 0 else 0.0
+            self.last_visit_counts[a] = child.visits / total_visits if total_visits > 0 else 0.0
 
-        action = max(root.children.values(), key=lambda c: c.visits).action
-        return action, visit_counts
+        return int(max(root.children.values(), key=lambda c: c.visits).action)
 
     def _simulate(self, root: AlphaMCTSNode) -> None:
         node = self._select(root)

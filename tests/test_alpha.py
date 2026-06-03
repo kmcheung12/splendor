@@ -175,7 +175,7 @@ def test_alpha_mcts_returns_valid_action():
     env, agent, name = _make_env_and_agent()
     obs, _, _, _, _ = env.last()
     mask = env.action_mask(name)
-    action, visit_counts = agent.act(obs, mask)
+    action = agent.act(obs, mask)
     assert mask[action], "chosen action must be valid"
 
 
@@ -183,7 +183,8 @@ def test_alpha_mcts_visit_counts_shape():
     env, agent, name = _make_env_and_agent()
     obs, _, _, _, _ = env.last()
     mask = env.action_mask(name)
-    action, visit_counts = agent.act(obs, mask)
+    agent.act(obs, mask)
+    visit_counts = agent.last_visit_counts
     assert len(visit_counts) == 108
     assert abs(sum(visit_counts) - 1.0) < 1e-5
 
@@ -192,8 +193,8 @@ def test_alpha_mcts_visit_counts_only_valid():
     env, agent, name = _make_env_and_agent()
     obs, _, _, _, _ = env.last()
     mask = env.action_mask(name)
-    action, visit_counts = agent.act(obs, mask)
-    for i, prob in enumerate(visit_counts):
+    agent.act(obs, mask)
+    for i, prob in enumerate(agent.last_visit_counts):
         if not mask[i]:
             assert prob == 0.0, f"invalid action {i} has non-zero visit count"
 
