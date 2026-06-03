@@ -73,14 +73,18 @@ class GameSession:
     # ── Messaging ─────────────────────────────────────────────────────────────
 
     async def broadcast(self, msg: dict) -> None:
-        text = json.dumps(msg)
         targets: list[WebSocket] = [s.websocket for s in self.slots if s.websocket]
         targets += self.spectators
         if self.host_ws and self.host_ws not in targets:
             targets.append(self.host_ws)
+        is_lobby = msg.get("type") == "lobby"
+        base_text = json.dumps(msg)
         for ws in targets:
             try:
-                await ws.send_text(text)
+                if is_lobby:
+                    await ws.send_text(json.dumps({**msg, "is_host": ws is self.host_ws}))
+                else:
+                    await ws.send_text(base_text)
             except Exception:
                 pass
 
