@@ -13,7 +13,12 @@
   }
 
   $: isActive = $activePlayer === player.name
-  $: tokenIcons = TOKEN_ORDER.flatMap(t => Array<string>(player.tokens[t] ?? 0).fill(t))
+  $: tokenIconsKeyed = (() => {
+    return TOKEN_ORDER.flatMap(t => {
+      const n = player.tokens[t] ?? 0
+      return Array.from({ length: n }, (_, j) => ({ t, key: `${t}-${j}` }))
+    })
+  })()
 </script>
 
 <div class="panel" class:active={isActive} data-position={position}>
@@ -22,15 +27,15 @@
     <span class="pts">{player.points} pts</span>
   </div>
   <div class="tokens">
-    {#each tokenIcons as t, i (t + '-player-' + i)}
+    {#each tokenIconsKeyed as {t, key} (key)}
       <span
         class="tok"
         style="background:{TOKEN_COLORS[t]}"
         title={t}
-        in:receiveToken={{ key: t + '-' + i }}
+        in:receiveToken={{ key }}
       ></span>
     {/each}
-    {#if tokenIcons.length === 0}<span class="none">no tokens</span>{/if}
+    {#if tokenIconsKeyed.length === 0}<span class="none">no tokens</span>{/if}
   </div>
   <CardStack cards={player.cards} />
   {#if player.reserved_cards.length > 0}

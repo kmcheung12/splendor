@@ -13,7 +13,12 @@
 
   $: board = $gameState?.board
   $: boardTokens = $gameState?.board_tokens ?? {}
-  $: tokenIcons = TOKEN_ORDER.flatMap(t => Array<string>(boardTokens[t] ?? 0).fill(t))
+  $: tokenIconsKeyed = (() => {
+    return TOKEN_ORDER.flatMap(t => {
+      const n = boardTokens[t] ?? 0
+      return Array.from({ length: n }, (_, j) => ({ t, key: `${t}-${j}` }))
+    })
+  })()
 
   let rows: Array<{ tier: string; deckCount: number; revealed: (PokemonCard | null)[] }> = []
   $: rows = board ? [
@@ -63,6 +68,15 @@
     popup = { x: rect.left, y: rect.bottom + 4, actions: relevant, labels: relevant.map(actionLabel) }
   }
 
+  function slotHasValidAction(slotIdx: number, tier: string): boolean {
+    const tierOffsets: Record<string, number> = {
+      common: 0, uncommon: 4, rare: 8, epic: 12, legendary: 13,
+    }
+    const absSlot = (tierOffsets[tier] ?? 0) + slotIdx
+    const valid = $humanTurnActions
+    return [30 + absSlot, 47 + absSlot, 59 + absSlot].some(a => valid.includes(a))
+  }
+
   function actionLabel(actionId: number): string {
     if (actionId >= 30 && actionId < 44) return 'Catch'
     if (actionId >= 44 && actionId < 47) return 'Catch (reserved)'
@@ -76,13 +90,13 @@
 
 <div class="board">
   <div class="token-pool">
-    {#each tokenIcons as t, i (t + '-board-' + i)}
+    {#each tokenIconsKeyed as {t, key} (key)}
       <span
         class="token"
         class:pulse={$isMyTurn}
         style="background:{TOKEN_COLORS[t]}"
         title={t}
-        out:sendToken={{ key: t + '-' + i }}
+        out:sendToken={{ key }}
         on:click={(e) => handleTokenClick(e, t)}
       ></span>
     {/each}
@@ -101,7 +115,7 @@
         <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
           <CardSlot
             {card} tier={row.tier}
-            highlight={$isMyTurn && card !== null}
+            highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, row.tier)}
             on:click={(e) => handleCardClick(e, slotIdx, row.tier)}
           />
         </div>
