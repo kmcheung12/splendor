@@ -1,7 +1,5 @@
 // frontend/src/lib/gameStore.ts
 import { writable, derived } from 'svelte/store'
-import { crossfade } from 'svelte/transition'
-import { quintOut } from 'svelte/easing'
 import type { GameState, LobbyState, ActionEvent } from './types'
 
 export const gameState = writable<GameState | null>(null)
@@ -23,10 +21,3 @@ export const isMyTurn = derived(
   }
 )
 
-export const [sendToken, receiveToken] = crossfade({
-  duration: 450,
-  easing: quintOut,
-  fallback(node) {
-    return { duration: 300, css: (t: number) => `opacity:${t}` }
-  },
-})

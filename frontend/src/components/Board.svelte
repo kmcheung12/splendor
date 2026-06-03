@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { gameState, sendToken, isMyTurn, humanTurnActions } from '../lib/gameStore'
+  import { gameState, isMyTurn, humanTurnActions } from '../lib/gameStore'
   import { fly } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
   import CardSlot from './CardSlot.svelte'
   import ActionMenu from './ActionMenu.svelte'
   import type { PokemonCard } from '../lib/types'
@@ -95,7 +96,7 @@
         class:pulse={$isMyTurn}
         style="background:{TOKEN_COLORS[t]}"
         title={t}
-        out:sendToken={{ key }}
+        out:fly={{ y: 50, duration: 220, easing: cubicOut }}
         on:click={(e) => handleTokenClick(e, t)}
       ></span>
     {/each}

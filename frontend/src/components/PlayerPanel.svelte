@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { PlayerState } from '../lib/types'
   import CardStack from './CardStack.svelte'
-  import { activePlayer, receiveToken } from '../lib/gameStore'
+  import { activePlayer } from '../lib/gameStore'
+  import { fly } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
 
   export let player: PlayerState
   export let position: 'top' | 'bottom' | 'left' | 'right' = 'bottom'
@@ -11,6 +13,9 @@
     red: '#e74c3c', yellow: '#f1c40f', blue: '#3498db',
     pink: '#e91e96', black: '#555', master: '#f39c12',
   }
+
+  // Tokens fly in from the direction of the board (which is toward the center)
+  $: flyY = position === 'top' ? 60 : -60
 
   $: isActive = $activePlayer === player.name
   $: tokenIconsKeyed = (() => {
@@ -32,7 +37,7 @@
         class="tok"
         style="background:{TOKEN_COLORS[t]}"
         title={t}
-        in:receiveToken={{ key }}
+        in:fly={{ y: flyY, duration: 350, easing: cubicOut }}
       ></span>
     {/each}
     {#if tokenIconsKeyed.length === 0}<span class="none">no tokens</span>{/if}
