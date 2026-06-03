@@ -61,8 +61,8 @@ def main():
                         help="Alpha training: .pt checkpoint to resume from")
     parser.add_argument("--alpha-start-iter", type=int, default=1,
                         help="Alpha training: iteration number to resume from (default 1)")
-    parser.add_argument("--alpha-workers", type=int, default=1,
-                        help="Alpha training: number of parallel self-play workers (default 1)")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="Number of parallel workers for train/alpha-train (default 1)")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--data", default="data/pokemon.jsonl")
     args = parser.parse_args()
@@ -77,7 +77,7 @@ def main():
         run_data_repl(jsonl)
     elif args.mode == "train":
         opponent_types = [a.strip() for a in args.opponents.split(",")]
-        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr)
+        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers)
     elif args.mode == "benchmark":
         _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
     elif args.mode == "alpha-train":
@@ -85,7 +85,7 @@ def main():
             jsonl, args.alpha_iters, args.alpha_games,
             args.alpha_sims, args.alpha_depth,
             len(agent_types), args.alpha_checkpoint_dir,
-            args.alpha_resume, args.alpha_start_iter, args.alpha_workers,
+            args.alpha_resume, args.alpha_start_iter, args.workers,
         )
     else:
         _run_game(jsonl, agent_types, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
@@ -257,7 +257,8 @@ def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_m
 def _run_train(jsonl: Path, episodes: int, save_path: str,
                opponent_types: list[str] | None = None,
                resume_path: str | None = None,
-               learning_rate: float = 0.0001):
+               learning_rate: float = 0.0001,
+               n_workers: int = 1):
     from sb3_contrib import MaskablePPO
     from sb3_contrib.common.wrappers import ActionMasker
     from pokemon_splendor.agents.rl import SingleAgentEnv
@@ -268,7 +269,18 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
     def mask_fn(env):
         return env.action_masks()
 
-    env = ActionMasker(SingleAgentEnv(jsonl, num_players=num_players, opponent_types=opponent_types), mask_fn)
+    def make_env():
+        return ActionMasker(
+            SingleAgentEnv(jsonl, num_players=num_players, opponent_types=opponent_types),
+            mask_fn,
+        )
+
+    if n_workers > 1:
+        from stable_baselines3.common.vec_env import SubprocVecEnv
+        env = SubprocVecEnv([make_env] * n_workers)
+        print(f"Using {n_workers} parallel environments")
+    else:
+        env = make_env()
 
     if resume_path:
         model = MaskablePPO.load(resume_path, env=env,
