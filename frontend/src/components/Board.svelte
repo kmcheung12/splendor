@@ -20,13 +20,12 @@
     })
   })()
 
-  let rows: Array<{ tier: string; deckCount: number; revealed: (PokemonCard | null)[] }> = []
-  $: rows = board ? [
-    { tier: 'legendary', deckCount: board.legendary_deck_count, revealed: board.legendary_revealed },
-    { tier: 'epic',      deckCount: board.epic_deck_count,      revealed: board.epic_revealed },
-    { tier: 'rare',      deckCount: board.rare_deck_count,      revealed: board.rare_revealed },
-    { tier: 'uncommon',  deckCount: board.uncommon_deck_count,  revealed: board.uncommon_revealed },
-    { tier: 'common',    deckCount: board.common_deck_count,    revealed: board.common_revealed },
+  // Rows 2–4 only (Epic+Legendary share row 1, handled separately in template)
+  let lowerRows: Array<{ tier: string; deckCount: number; revealed: (PokemonCard | null)[] }> = []
+  $: lowerRows = board ? [
+    { tier: 'rare',     deckCount: board.rare_deck_count,     revealed: board.rare_revealed },
+    { tier: 'uncommon', deckCount: board.uncommon_deck_count, revealed: board.uncommon_revealed },
+    { tier: 'common',   deckCount: board.common_deck_count,   revealed: board.common_revealed },
   ] : []
 
   let popup: { x: number; y: number; actions: number[]; labels: string[] } | null = null
@@ -102,26 +101,53 @@
     {/each}
   </div>
 
-  {#each rows as row, rowIdx}
-    <div class="card-row tier-{row.tier}">
-      {#if rowIdx === 0}
-        <div class="card-cell empty"></div>
-      {:else}
-        <div class="card-cell deck-back tier-{row.tier}">
-          <span class="deck-count">{row.deckCount}</span>
-        </div>
-      {/if}
-      {#each row.revealed as card, slotIdx (card?.name ?? `empty-${row.tier}-${slotIdx}`)}
+  {#if board}
+    <!-- Row 1: Epic + Legendary share this row (5 cols) -->
+    <div class="card-row">
+      <div class="card-cell empty"></div>
+      <div class="card-cell deck-back tier-epic">
+        <div class="deck-label">Epic</div>
+        <span class="deck-count">{board.epic_deck_count}</span>
+      </div>
+      {#each board.epic_revealed as card, slotIdx (card?.name ?? `empty-epic-${slotIdx}`)}
         <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
-          <CardSlot
-            {card} tier={row.tier}
-            highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, row.tier)}
-            on:click={(e) => handleCardClick(e, slotIdx, row.tier)}
+          <CardSlot {card} tier="epic"
+            highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, 'epic')}
+            on:click={(e) => handleCardClick(e, slotIdx, 'epic')}
+          />
+        </div>
+      {/each}
+      <div class="card-cell deck-back tier-legendary">
+        <div class="deck-label">Leg.</div>
+        <span class="deck-count">{board.legendary_deck_count}</span>
+      </div>
+      {#each board.legendary_revealed as card, slotIdx (card?.name ?? `empty-legendary-${slotIdx}`)}
+        <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
+          <CardSlot {card} tier="legendary"
+            highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, 'legendary')}
+            on:click={(e) => handleCardClick(e, slotIdx, 'legendary')}
           />
         </div>
       {/each}
     </div>
-  {/each}
+
+    <!-- Rows 2–4: Rare, Uncommon, Common (deck back + 4 revealed each) -->
+    {#each lowerRows as row}
+      <div class="card-row">
+        <div class="card-cell deck-back tier-{row.tier}">
+          <span class="deck-count">{row.deckCount}</span>
+        </div>
+        {#each row.revealed as card, slotIdx (card?.name ?? `empty-${row.tier}-${slotIdx}`)}
+          <div class="card-cell" in:fly={{ y: -30, duration: 400 }}>
+            <CardSlot {card} tier={row.tier}
+              highlight={$isMyTurn && card !== null && slotHasValidAction(slotIdx, row.tier)}
+              on:click={(e) => handleCardClick(e, slotIdx, row.tier)}
+            />
+          </div>
+        {/each}
+      </div>
+    {/each}
+  {/if}
 </div>
 
 {#if popup}
@@ -143,7 +169,8 @@
   }
   .card-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
   .card-cell { min-height: 110px; }
-  .deck-back { border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; position: relative; }
+  .deck-back { border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: default; position: relative; }
+  .deck-label { font-size: .6rem; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: .05em; }
   .deck-back.tier-common    { background: linear-gradient(135deg,#8B6914,#c9a64a); }
   .deck-back.tier-uncommon  { background: linear-gradient(135deg,#7f8c8d,#bdc3c7); }
   .deck-back.tier-rare      { background: linear-gradient(135deg,#c8a415,#f5d60a); }
