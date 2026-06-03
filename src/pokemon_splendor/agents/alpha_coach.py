@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from collections import deque
+import copy
 import random
 import numpy as np
 from pathlib import Path
@@ -121,6 +122,80 @@ def _self_play_worker(args: tuple) -> list[SelfPlayRecord]:
     return run_self_play_game(jsonl_path, network, num_players, n_simulations, depth)
 
 
+def _eval_game(args: tuple) -> float:
+    """Returns candidate's outcome (0–1) in one game against best."""
+    jsonl_path, candidate_state, best_state, num_players, n_simulations, depth = args
+    from pokemon_splendor.engine.env import PokemonSplendorEnv
+    from pokemon_splendor.agents.alpha_mcts import AlphaMCTSAgent
+
+    candidate = AlphaNet()
+    candidate.load_state_dict(candidate_state)
+    candidate.eval()
+    best = AlphaNet()
+    best.load_state_dict(best_state)
+    best.eval()
+
+    env = PokemonSplendorEnv(jsonl_path, num_players=num_players)
+    env.reset()
+
+    agents = {
+        env.possible_agents[0]: AlphaMCTSAgent(env, env.possible_agents[0],
+                                               network=candidate, n_simulations=n_simulations, depth=depth),
+    }
+    for name in env.possible_agents[1:]:
+        agents[name] = AlphaMCTSAgent(env, name, network=best,
+                                      n_simulations=n_simulations, depth=depth)
+
+    for _ in range(MAX_STEPS):
+        if not env.agents:
+            break
+        name = env.agent_selection
+        obs, _, term, trunc, _ = env.last()
+        if term or trunc:
+            break
+        mask = env.action_mask(name)
+        action = agents[name].act(obs, mask)
+        env.step(action)
+
+    if env.game.winner is None:
+        from pokemon_splendor.engine.rules import check_win_condition
+        winner = check_win_condition(env.game)
+        if winner is None:
+            winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
+        env.game.winner = winner
+
+    outcomes = compute_outcomes(env.game)
+    return outcomes[env.possible_agents[0]]
+
+
+def evaluate_candidate(
+    candidate: AlphaNet,
+    best: AlphaNet,
+    jsonl_path: Path,
+    num_players: int,
+    n_games: int,
+    n_simulations: int,
+    depth: int,
+    n_workers: int = 1,
+) -> float:
+    """Returns candidate's average outcome over n_games against best."""
+    candidate_state = {k: v.cpu() for k, v in candidate.state_dict().items()}
+    best_state = {k: v.cpu() for k, v in best.state_dict().items()}
+    args = [
+        (jsonl_path, candidate_state, best_state, num_players, n_simulations, depth)
+    ] * n_games
+
+    if n_workers > 1:
+        from multiprocessing import get_context
+        ctx = get_context("spawn")
+        with ctx.Pool(processes=n_workers) as pool:
+            outcomes = pool.map(_eval_game, args)
+    else:
+        outcomes = [_eval_game(a) for a in args]
+
+    return float(np.mean(outcomes))
+
+
 class AlphaCoach:
     def __init__(
         self,
@@ -131,12 +206,14 @@ class AlphaCoach:
         n_simulations: int = 100,
         depth: int = 4,
         batch_size: int = 256,
-        buffer_size: int = 2000,
+        buffer_size: int = 20000,
         lr: float = 0.001,
         checkpoint_dir: str = "checkpoints",
         resume_from: str | None = None,
         start_iteration: int = 1,
         n_workers: int = 1,
+        eval_games: int = 40,
+        accept_threshold: float = 0.45,
     ):
         self._jsonl_path = jsonl_path
         self._num_players = num_players
@@ -152,6 +229,8 @@ class AlphaCoach:
         self._resume_from = resume_from
         self._start_iteration = start_iteration
         self._n_workers = n_workers
+        self._eval_games = eval_games
+        self._accept_threshold = accept_threshold
 
     def _run_self_play_iteration(self, network: AlphaNet) -> list[list[SelfPlayRecord]]:
         args = [
@@ -169,31 +248,46 @@ class AlphaCoach:
 
     def run(self) -> None:
         if self._resume_from:
-            network = AlphaNet.load(self._resume_from)
+            best_network = AlphaNet.load(self._resume_from)
             print(f"Resumed from {self._resume_from}")
         else:
-            network = AlphaNet()
-        network.eval()
-        optimizer = torch.optim.Adam(network.parameters(), lr=self._lr)
+            best_network = AlphaNet()
+        best_network.eval()
         replay_buffer: deque[SelfPlayRecord] = deque(maxlen=self._buffer_size)
 
         for iteration in range(self._start_iteration, self._n_iterations + 1):
             print(f"\n[Iteration {iteration}/{self._n_iterations}]")
 
-            # Self-play
-            all_game_records = self._run_self_play_iteration(network)
+            # Self-play against best accepted network
+            all_game_records = self._run_self_play_iteration(best_network)
             for game_num, records in enumerate(all_game_records, 1):
                 if records:
                     replay_buffer.extend(records)
                 print(f"  game {game_num}/{self._games_per_iteration} — {len(records)} records", flush=True)
+            print(f"  buffer size: {len(replay_buffer)}")
 
-            # Train
+            # Train a candidate from a fresh copy of best
             if len(replay_buffer) >= self._batch_size:
+                candidate = copy.deepcopy(best_network)
+                optimizer = torch.optim.Adam(candidate.parameters(), lr=self._lr)
                 batch = random.sample(list(replay_buffer), self._batch_size)
-                policy_loss, value_loss = train_step(network, optimizer, batch)
+                policy_loss, value_loss = train_step(candidate, optimizer, batch)
                 print(f"  policy_loss={policy_loss:.4f}  value_loss={value_loss:.4f}")
 
-            # Checkpoint
+                # Evaluate candidate against best
+                avg_outcome = evaluate_candidate(
+                    candidate, best_network,
+                    self._jsonl_path, self._num_players,
+                    self._eval_games, self._n_simulations, self._depth,
+                    self._n_workers,
+                )
+                accepted = avg_outcome >= self._accept_threshold
+                print(f"  eval avg_outcome={avg_outcome:.3f} threshold={self._accept_threshold} → {'ACCEPTED' if accepted else 'rejected'}")
+                if accepted:
+                    best_network = candidate
+                    best_network.eval()
+
+            # Always checkpoint the current best
             path = self._checkpoint_dir / f"alpha_{iteration:04d}.pt"
-            network.save(str(path))
+            best_network.save(str(path))
             print(f"  saved {path}")
