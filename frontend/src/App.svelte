@@ -1,21 +1,24 @@
 <!-- frontend/src/App.svelte -->
 <script lang="ts">
   import { connect } from './lib/ws'
-  import { gameState, lobbyState, gameOver } from './lib/gameStore'
+  import { gameState, gameOver, playerNames } from './lib/gameStore'
+  import { tutorialMode, initTutorial } from './lib/tutorialStore'
+  import { BOARD_SELECTOR_MAP } from './lib/tutorial'
   import Lobby from './components/Lobby.svelte'
   import Board from './components/Board.svelte'
   import PlayerPanel from './components/PlayerPanel.svelte'
-  import StatusChip from './components/StatusChip.svelte'
   import GameOver from './components/GameOver.svelte'
+  import TutorialOverlay from './components/TutorialOverlay.svelte'
+  import TutorialController from './components/TutorialController.svelte'
 
   let view: 'setup' | 'lobby' | 'game' = 'setup'
   let gameId = ''
 
-  let numPlayers = 2
-  let agentTypes = ['random', 'random', 'random', 'random']
+  let numPlayers = 4
+  let agentTypes = ['mcts', 'mcts', 'mctsrl', 'mctsrl']
   let delayMs = 800
 
-  const AGENT_OPTIONS = ['random', 'early-capture', 'high-point', 'bonus-engine', 'evolution-chain', 'denial', 'mcts']
+  const AGENT_OPTIONS = ['mcts', 'mctsrl', 'denial', 'evolution-chain', 'bonus-engine', 'high-point', 'early-capture', 'random']
 
   let error: string | null = null
 
@@ -38,6 +41,29 @@
       view = 'lobby'
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create game'
+    }
+  }
+
+  async function createTutorialGame() {
+    error = null
+    try {
+      const res = await fetch('/game/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          num_players: 2,
+          agent_types: ['human', 'mcts'],
+          delay_ms: 1200,
+        }),
+      })
+      if (!res.ok) throw new Error(`Server error: ${res.status}`)
+      const data = await res.json()
+      gameId = data.game_id
+      initTutorial()
+      connect(gameId)
+      view = 'lobby'
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to create tutorial game'
     }
   }
 
@@ -69,6 +95,10 @@
       {/if}
 
       <section>
+        <button class="btn-tutorial" on:click={createTutorialGame}>▶ Play Tutorial</button>
+      </section>
+
+      <section>
         <h2>Create Game</h2>
         <label>Players: <input type="number" min="2" max="4" bind:value={numPlayers} /></label>
         {#each Array(numPlayers) as _, i}
@@ -94,24 +124,31 @@
 
   {:else if view === 'game'}
     {#if $gameState}
+      {@const players = $gameState.players}
       <div class="game-layout">
-        {#each $gameState.players.slice(0, Math.floor($gameState.players.length / 2)) as player}
-          <PlayerPanel {player} position="top" />
-        {/each}
-
-        <div class="center">
-          <StatusChip />
-          <Board />
+        <div class="row-1">
+          {#if players[0]}<PlayerPanel player={players[0]} displayName={$playerNames[players[0].name] ?? players[0].name} position="top-left" />{/if}
+          <div class="board-col">
+<Board />
+          </div>
+          {#if players[1]}<PlayerPanel player={players[1]} displayName={$playerNames[players[1].name] ?? players[1].name} position="top-right" />{/if}
         </div>
-
-        {#each $gameState.players.slice(Math.floor($gameState.players.length / 2)) as player}
-          <PlayerPanel {player} position="bottom" />
-        {/each}
+        {#if players[2] || players[3]}
+          <div class="row-2">
+            {#if players[3]}<PlayerPanel player={players[3]} displayName={$playerNames[players[3].name] ?? players[3].name} position="bottom-left" />{/if}
+            {#if players[2]}<PlayerPanel player={players[2]} displayName={$playerNames[players[2].name] ?? players[2].name} position="bottom-right" />{/if}
+          </div>
+        {/if}
       </div>
     {/if}
 
+    {#if $tutorialMode}
+      <TutorialController />
+      <TutorialOverlay selectorMap={BOARD_SELECTOR_MAP} />
+    {/if}
+
     {#if $gameOver}
-      <GameOver winner={$gameOver.winner} scores={$gameOver.scores} />
+      <GameOver winner={$gameOver.winner} scores={$gameOver.scores} rounds={$gameOver.rounds} />
     {/if}
   {/if}
 </div>
@@ -132,6 +169,24 @@
   button:hover { background: #2ecc71; }
   button:disabled { background: #555; cursor: not-allowed; }
   .error { background: rgba(231,76,60,.2); border: 1px solid rgba(231,76,60,.4); color: #e74c3c; border-radius: 6px; padding: 8px 12px; font-size: .85rem; }
-  .game-layout { display: flex; flex-direction: column; min-height: 100vh; padding: 8px; gap: 8px; }
-  .center { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+  .btn-tutorial {
+    background: #2c3e8c;
+    font-size: 1rem;
+    padding: 12px 20px;
+    border-radius: 8px;
+    letter-spacing: 0.03em;
+  }
+  .btn-tutorial:hover { background: #3a52b4; }
+  .game-layout { display: flex; flex-direction: column; gap: 8px; padding: 8px; min-height: 100vh; }
+  .row-1 {
+    display: grid;
+    grid-template-columns: minmax(0, 20%) minmax(60%, 1fr) minmax(0, 20%);
+    gap: 8px; align-items: center;
+  }
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .board-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 </style>
