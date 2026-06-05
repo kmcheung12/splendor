@@ -77,13 +77,37 @@ uv run pokemon-splendor --mode train \
 
 **Benchmark results (500 games, 4-player mixed):**
 
-| Model | Win rate | vs denial |
-|-------|----------|-----------|
-| v7e   | 33.0%    | 48.0%     |
-| v73p  | 39.4%    | 42.0%     |
-| v73p3 | 43.8%    | 37.6%     |
+| Model | Win rate | vs MCTS (50 sims) | Notes |
+|-------|----------|-------------------|-------|
+| v7e   | 33.0%    | —                 | baseline |
+| v73p  | 39.4%    | —                 | fine-tune from v7e |
+| v73p3 | 43.8%    | —                 | continued fine-tune |
+| v73p4 | 47.4%    | —                 | lr=1e-05 |
+| v73p5 | 54.4%    | —                 | lr=5e-06 |
+| v7-4p | 58.2%    | —                 | 4-player training vs denial,v73p4,v7e |
+| v7-4p2 | 60.6%  | —                 | +MCTS opponent (slow) |
+| v7-4p3 | 62.8%  | —                 | self-play opponents |
+| v7-sp  | 67.0%  | —                 | self-play vs self, lr=1e-06 |
+| v7-sp4 | 77.8%  | ~50%              | self-play x4 iterations |
+| v7-sp7 | 81.8%  | 57%               | self-play x7 iterations |
 
-v73p3 vs v7e in 2-player head-to-head: **57.6%**
+v73p5 vs v73p4 in 2-player head-to-head: **58.8%**
+v7-4p vs v73p5 in 2-player head-to-head: **57.8%**
+
+**Note on MCTS benchmarks:** MCTS here uses early-capture as its rollout policy, which
+is a predictable heuristic with exploitable patterns. A fairer measure of strategic
+strength is MCTS using the model itself as rollout — v7-sp4 vs MCTS(v7-sp4 rollout,
+50 sims) showed **46%**, meaning explicit search still adds value on top of the learned
+policy.
+
+**Self-play curriculum (v7-sp series):**
+```bash
+uv run pokemon-splendor --mode train \
+    --opponents denial,v7-sp7.zip,v7-sp7.zip --episodes 1000000 \
+    --resume v7-sp7.zip --lr 0.000001 --save v7-sp8.zip --workers 8
+```
+Key lessons: use lr=1e-06 (5e-07 is too small — policy freezes), train against the
+current best model twice, keep denial for diversity.
 
 ### Key training lessons
 
@@ -108,6 +132,27 @@ If the new model regresses, go back to the last good checkpoint rather than cont
 - Initial fine-tuning: `--lr 0.00003`
 - Continued runs: `--lr 0.00002`
 - Stabilising: `--lr 0.00001`
+
+**MCTS opponents are slow.** Using `mcts:sims:depth:model.zip` as an opponent drops fps
+significantly (400–600 vs 1200+ for RL opponents). Use low sim counts to keep throughput
+reasonable:
+```bash
+# Train against MCTS using a trained model as its rollout policy
+uv run pokemon-splendor --mode train \
+    --opponents "mcts:50:2:v73p5.zip",denial --episodes 1000000 \
+    --resume v7-4p.zip --lr 0.000001 --save v7-mcts.zip --workers 8
+```
+The format is `mcts:<sims>:<depth>:<model.zip>`. 50 sims / depth 2 is a reasonable
+balance; higher sims give a stronger opponent but drop fps further.
+
+**4-player training improves generalisation.** Training against 3 opponents (4-player)
+produces higher explained_variance and stronger benchmark results than 3-player, despite
+noisier reward signal. Use `--opponents a,b,c` for 4-player training:
+```bash
+uv run pokemon-splendor --mode train \
+    --opponents denial,v73p4.zip,v7e.zip --episodes 1000000 \
+    --resume v73p5.zip --lr 0.000002 --save v7-4p.zip --workers 8
+```
 
 ### Training from scratch (curriculum)
 
