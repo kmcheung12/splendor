@@ -20,11 +20,14 @@
   function release() {
     releaseSlot()
   }
+  // Auto-sit in seat 0 when host first enters the lobby
+  let didAutoClaim = false
+  $: if ($isHost && $mySlot === null && !didAutoClaim && $lobbyState) {
+    didAutoClaim = true
+    claim(0)
+  }
+
   function handleStart() {
-    if ($mySlot === null) {
-      claimSlot(0, playerName)
-      mySlot.set(0)
-    }
     startGame()
     dispatch('started')
   }
