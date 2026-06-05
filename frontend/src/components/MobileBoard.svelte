@@ -140,7 +140,11 @@
       {/each}
     </div>
 
-    {#if !$tokenSelectMode}
+    {#if $tokenSelectMode || $stagedTokens.length > 0}
+    <div class="top-staging">
+      <TokenStagingArea />
+    </div>
+    {:else}
     <div class="top-cards">
       <!-- Epic -->
       <div class="deck" style="background:{TIER_DECK_GRAD.epic}">
@@ -219,13 +223,6 @@
     {/if}
   </div>
 
-  <!-- ── Token staging strip (when active) ── -->
-  {#if $tokenSelectMode || $stagedTokens.length > 0}
-    <div class="staging-wrap">
-      <TokenStagingArea />
-    </div>
-  {/if}
-
   <!-- ── Lower rows: rare, uncommon, common ── -->
   {#each lowerRows as row}
     <div class="card-row">
@@ -281,10 +278,10 @@
 <style>
   .board { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .board-top { display: flex; gap: 8px; width: 462px; align-items: stretch; }
-  .pool { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; align-content: center; }
-  .top-cards { display: flex; gap: 6px; flex: none; }
+  .pool { flex: 0 0 160px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; align-content: center; }
+  .top-cards { flex: 1; display: flex; gap: 6px; }
+  .top-staging { flex: 1; min-width: 0; display: flex; align-items: stretch; }
   .card-row { display: flex; gap: 6px; width: 462px; }
-  .staging-wrap { width: 462px; padding: 4px 0; box-sizing: border-box; }
 
   .pool-tok {
     background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
