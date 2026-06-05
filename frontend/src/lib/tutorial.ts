@@ -144,14 +144,6 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
     },
   },
   {
-    id: 'action_reserve_master',
-    title: 'Reserve + Master Ball',
-    body: "Reserve a Common, Uncommon, or Rare card to save it for later. You'll receive a golden Master Ball wildcard.",
-    targets: ['tier-reservable'],
-    trigger: { type: 'human_turn_action', min: 47, max: 59 },
-    completedBy: { type: 'action_event', eventType: 'reserve_card' },
-  },
-  {
     id: 'action_capture_reserve',
     title: 'Catch from Reserve',
     body: 'Your reserved cards sit in your panel. When you can afford one, click it to catch it.',
@@ -162,6 +154,14 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
       eventType: 'catch_card',
       condition: (e): boolean => e.type === 'catch_card' && e.from_reserve,
     },
+  },
+  {
+    id: 'action_reserve_master',
+    title: 'Reserve + Master Ball',
+    body: "Reserve a Common, Uncommon, or Rare card to save it for later. You'll receive a golden Master Ball wildcard.",
+    targets: ['tier-reservable'],
+    trigger: { type: 'human_turn_action', min: 47, max: 59 },
+    completedBy: { type: 'action_event', eventType: 'reserve_card' },
   },
 
   // ── Post-action UI reveals: shown immediately after player's first relevant action ─
