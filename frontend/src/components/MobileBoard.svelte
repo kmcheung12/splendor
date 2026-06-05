@@ -6,7 +6,6 @@
   } from '../lib/gameStore'
   import TokenStagingArea from './TokenStagingArea.svelte'
   import ActionMenu from './ActionMenu.svelte'
-  import type { PokemonCard } from '../lib/types'
   import { BALL } from '../lib/tokens'
   import { sendAction } from '../lib/ws'
 
@@ -132,7 +131,7 @@
           class:empty={count === 0}
           class:pulse={$isMyTurn && canAddToken(t)}
           data-token-type={t}
-          disabled={count === 0 && !canAddToken(t)}
+          disabled={count === 0}
           on:click={() => handleTokenClick(t)}
         >
           <img src={BALL[t]} alt={t} width="20" height="20" draggable="false">
@@ -271,6 +270,7 @@
   <ActionMenu
     anchorX={popup.x} anchorY={popup.y}
     actions={popup.actions} labels={popup.labels}
+    on:confirm={(e) => { sendAction(e.detail.actionId); popup = null }}
     on:cancel={() => popup = null}
   />
 {/if}
