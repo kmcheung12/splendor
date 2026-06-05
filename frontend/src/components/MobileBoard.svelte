@@ -140,6 +140,7 @@
       {/each}
     </div>
 
+    {#if !$tokenSelectMode}
     <div class="top-cards">
       <!-- Epic -->
       <div class="deck" style="background:{TIER_DECK_GRAD.epic}">
@@ -215,6 +216,7 @@
         </div>
       {/each}
     </div>
+    {/if}
   </div>
 
   <!-- ── Token staging strip (when active) ── -->
