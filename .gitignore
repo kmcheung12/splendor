@@ -10,5 +10,5 @@ wheels/
 .venv
 
 # frontend
-frontend/node_modules/
-frontend/.vite/
+node_modules/
+.vite/
