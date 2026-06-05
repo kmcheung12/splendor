@@ -310,6 +310,7 @@
     border: 2px solid #0c0d12; border-radius: 3px; overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.10), 2px 2px 0 rgba(0,0,0,.42);
     display: flex; flex-direction: column; cursor: pointer;
+    box-sizing: border-box;
   }
   .bcard img { image-rendering: pixelated; display: block; }
   .bcard.bcard-highlight { cursor: pointer; outline: 2px solid #ffd23f; }
