@@ -5,7 +5,8 @@
     tokenSelectMode, stagedTokens, catchFlash,
   } from '../lib/gameStore'
   import TokenStagingArea from './TokenStagingArea.svelte'
-  import ActionMenu from './ActionMenu.svelte'
+  import CardDetailModal from './CardDetailModal.svelte'
+  import type { PokemonCard } from '../lib/types'
   import { BALL } from '../lib/tokens'
   import { sendAction } from '../lib/ws'
 
@@ -83,26 +84,25 @@
     return candidates.some(a => $humanTurnActions.includes(a))
   }
 
-  let popup: { x: number; y: number; actions: number[]; labels: string[] } | null = null
+  let cardDetail: { card: PokemonCard; tier: string; actions: { id: number; label: string }[] } | null = null
 
   function handleTokenClick(t: string) {
     if (!canAddToken(t)) return
-    popup = null
+    cardDetail = null
     stagedTokens.update(s => [...s, t])
     tokenSelectMode.set(true)
   }
 
-  function handleCardClick(e: MouseEvent, tier: string, slotIdx: number) {
-    if (!$isMyTurn) return
+  function handleCardClick(card: PokemonCard, tier: string, slotIdx: number) {
     if ($tokenSelectMode) { stagedTokens.set([]); tokenSelectMode.set(false); return }
     const absSlot = (TIER_ABS_OFFSET[tier] ?? 0) + slotIdx
     const candidates = absSlot < 12
       ? [30 + absSlot, 47 + absSlot, 59 + absSlot]
       : [30 + absSlot]
-    const relevant = candidates.filter(a => $humanTurnActions.includes(a))
-    if (!relevant.length) return
-    const rect = (e.target as HTMLElement).getBoundingClientRect()
-    popup = { x: rect.left, y: rect.bottom + 4, actions: relevant, labels: relevant.map(actionLabel) }
+    const relevant = $isMyTurn
+      ? candidates.filter(a => $humanTurnActions.includes(a))
+      : []
+    cardDetail = { card, tier, actions: relevant.map(a => ({ id: a, label: actionLabel(a) })) }
   }
 
   function actionLabel(id: number): string {
@@ -155,8 +155,8 @@
           data-tier="epic" data-slot={slotIdx}
           style={card ? `background:${CARDBG[card.bonus[0]] ?? '#2a2a2a'}` : 'background:#1a1a2e'}
           role="button" tabindex="0"
-          on:click={(e) => card && handleCardClick(e, 'epic', slotIdx)}
-          on:keydown={(e) => e.key === 'Enter' && card && handleCardClick(e as unknown as MouseEvent, 'epic', slotIdx)}
+          on:click={() => card && handleCardClick(card, 'epic', slotIdx)}
+          on:keydown={(e) => e.key === 'Enter' && card && handleCardClick(card, 'epic', slotIdx)}
         >
           {#if card}
             <div class="bcard-bar" style="background:{TIER_BAR.epic}"></div>
@@ -192,8 +192,8 @@
           data-tier="legendary" data-slot={slotIdx}
           style={card ? `background:${CARDBG[card.bonus[0]] ?? '#2a2a2a'}` : 'background:#1a1a2e'}
           role="button" tabindex="0"
-          on:click={(e) => card && handleCardClick(e, 'legendary', slotIdx)}
-          on:keydown={(e) => e.key === 'Enter' && card && handleCardClick(e as unknown as MouseEvent, 'legendary', slotIdx)}
+          on:click={() => card && handleCardClick(card, 'legendary', slotIdx)}
+          on:keydown={(e) => e.key === 'Enter' && card && handleCardClick(card, 'legendary', slotIdx)}
         >
           {#if card}
             <div class="bcard-bar" style="background:{TIER_BAR.legendary}"></div>
@@ -239,8 +239,8 @@
           data-tier={row.tier} data-slot={slotIdx}
           style={card ? `background:${CARDBG[card.bonus[0]] ?? '#2a2a2a'}` : 'background:#1a1a2e'}
           role="button" tabindex="0"
-          on:click={(e) => card && handleCardClick(e, row.tier, slotIdx)}
-          on:keydown={(e) => e.key === 'Enter' && card && handleCardClick(e as unknown as MouseEvent, row.tier, slotIdx)}
+          on:click={() => card && handleCardClick(card, row.tier, slotIdx)}
+          on:keydown={(e) => e.key === 'Enter' && card && handleCardClick(card, row.tier, slotIdx)}
         >
           {#if card}
             <div class="bcard-bar" style="background:{TIER_BAR[row.tier]}"></div>
@@ -266,12 +266,13 @@
 </div>
 {/if}
 
-{#if popup}
-  <ActionMenu
-    anchorX={popup.x} anchorY={popup.y}
-    actions={popup.actions} labels={popup.labels}
-    on:confirm={(e) => { sendAction(e.detail.actionId); popup = null }}
-    on:cancel={() => popup = null}
+{#if cardDetail}
+  <CardDetailModal
+    card={cardDetail.card}
+    tier={cardDetail.tier}
+    actions={cardDetail.actions}
+    on:action={(e) => { sendAction(e.detail); cardDetail = null }}
+    on:close={() => cardDetail = null}
   />
 {/if}
 
@@ -309,7 +310,7 @@
     width: 100px; height: 80px; flex: none; position: relative; color: #fff;
     border: 2px solid #0c0d12; border-radius: 3px; overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.10), 2px 2px 0 rgba(0,0,0,.42);
-    display: flex; flex-direction: column; cursor: default;
+    display: flex; flex-direction: column; cursor: pointer;
   }
   .bcard img { image-rendering: pixelated; display: block; }
   .bcard.bcard-highlight { cursor: pointer; outline: 2px solid #ffd23f; }

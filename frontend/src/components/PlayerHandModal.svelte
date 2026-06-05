@@ -5,6 +5,7 @@
   import { sendAction } from '../lib/ws'
   import { BALL } from '../lib/tokens'
   import type { PlayerState, PokemonCard } from '../lib/types'
+  import CardDetailModal from './CardDetailModal.svelte'
 
   export let player: PlayerState
   export let displayName: string
@@ -94,6 +95,18 @@
     sendAction(107)
     dispatch('close')
   }
+
+  let cardDetail: { card: PokemonCard; tier: string; actions: { id: number; label: string }[] } | null = null
+
+  function openOwnedDetail(card: PokemonCard, origIdx: number) {
+    const actions = canEvolve(origIdx) ? [{ id: 77 + origIdx, label: 'Evolve' }] : []
+    cardDetail = { card, tier: card.tier, actions }
+  }
+
+  function openReservedDetail(card: PokemonCard, idx: number) {
+    const actions = canCatch(idx) ? [{ id: 44 + idx, label: 'Catch' }] : []
+    cardDetail = { card, tier: card.tier, actions }
+  }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -137,7 +150,7 @@
         <div class="xreserved">
           {#each player.reserved_cards as card, idx}
             {@const catchable = canCatch(idx)}
-            <div class="xrm" class:xrm-catchable={catchable} on:click={() => handleCatch(idx)}>
+            <div class="xrm" class:xrm-catchable={catchable} on:click={() => openReservedDetail(card, idx)}>
               <span class="rm-bar" style="background:{TIER_BAR[card.tier] ?? '#888'}"></span>
               <img src={spriteUrl(card.name)} alt={card.name} width="18" height="18" draggable="false">
               <span class="rm-name">{card.name}</span>
@@ -179,7 +192,7 @@
                       class:evolvable
                       class:evo-consumed={card.evolved}
                       style="background:{CARDBG[color] ?? '#2a2a2a'}"
-                      on:click={() => handleEvolve(origIdx)}
+                      on:click={() => openOwnedDetail(card, origIdx)}
                       title="{card.name}{card.evolve_into ? ' ▸ ' + card.evolve_into : ' · MAX'}"
                     >
                       <span class="otile-bar" style="background:{TIER_BAR[card.tier] ?? '#888'}"></span>
@@ -200,6 +213,16 @@
     </div>
   </div>
 </div>
+
+{#if cardDetail}
+  <CardDetailModal
+    card={cardDetail.card}
+    tier={cardDetail.tier}
+    actions={cardDetail.actions}
+    on:action={(e) => { sendAction(e.detail); cardDetail = null; dispatch('close') }}
+    on:close={() => cardDetail = null}
+  />
+{/if}
 
 <style>
   /* ── Backdrop + modal ── */
