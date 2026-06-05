@@ -1,14 +1,90 @@
-{"name": "charmander", "tier": "common", "cost": {"red": 2}, "bonus": {"red": 1}, "evolve": {"red": 2}, "evolve_into": "charmeleon", "point": 0}
-{"name": "charmeleon", "tier": "uncommon", "cost": {"red": 3}, "bonus": {"red": 2}, "evolve": {"red": 3}, "evolve_into": "charizard", "point": 1}
-{"name": "charizard", "tier": "rare", "cost": {"red": 4}, "bonus": {"red": 3}, "evolve": {}, "evolve_into": "", "point": 3}
-{"name": "squirtle", "tier": "common", "cost": {"blue": 2}, "bonus": {"blue": 1}, "evolve": {"blue": 2}, "evolve_into": "wartortle", "point": 0}
-{"name": "wartortle", "tier": "uncommon", "cost": {"blue": 3}, "bonus": {"blue": 2}, "evolve": {}, "evolve_into": "", "point": 1}
-{"name": "bulbasaur", "tier": "common", "cost": {"yellow": 2}, "bonus": {"yellow": 1}, "evolve": {}, "evolve_into": "", "point": 0}
-{"name": "pikachu", "tier": "common", "cost": {"yellow": 1, "red": 1}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 0}
-{"name": "mewtwo", "tier": "epic", "cost": {"master": 1, "red": 3, "blue": 3}, "bonus": {"red": 3}, "evolve": {}, "evolve_into": "", "point": 8}
-{"name": "rayquaza", "tier": "legendary", "cost": {"master": 1, "red": 4, "blue": 4}, "bonus": {"blue": 3}, "evolve": {}, "evolve_into": "", "point": 12}
-{"name": "eevee", "tier": "common", "cost": {"pink": 2}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 0}
-{"name": "geodude", "tier": "common", "cost": {"black": 2}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 0}
-{"name": "gastly", "tier": "uncommon", "cost": {"black": 2, "pink": 1}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 1}
-{"name": "vaporeon", "tier": "rare", "cost": {"blue": 3, "pink": 2}, "bonus": {"blue": 2}, "evolve": {}, "evolve_into": "", "point": 4}
-{"name": "flareon", "tier": "rare", "cost": {"red": 3, "yellow": 2}, "bonus": {"red": 2}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "Abra", "tier": "common", "cost": {"blue": 3, "yellow": 2}, "bonus": {"pink": 1}, "evolve": {"red": 3}, "evolve_into": "Kadabra", "point": 1}
+{"name": "Abra", "tier": "common", "cost": {"pink": 4}, "bonus": {"pink": 1}, "evolve": {"red": 3}, "evolve_into": "Kadabra", "point": 1}
+{"name": "Bellsprout", "tier": "common", "cost": {"black": 2, "blue": 1}, "bonus": {"red": 1}, "evolve": {"pink": 2}, "evolve_into": "Weepinbell", "point": 0}
+{"name": "Bellsprout", "tier": "common", "cost": {"pink": 2, "red": 1}, "bonus": {"red": 1}, "evolve": {"pink": 2}, "evolve_into": "Weepinbell", "point": 0}
+{"name": "Bellsprout", "tier": "common", "cost": {"yellow": 3}, "bonus": {"red": 1}, "evolve": {"pink": 2}, "evolve_into": "Weepinbell", "point": 0}
+{"name": "Bulbasaur", "tier": "common", "cost": {"red": 3, "black": 2}, "bonus": {"yellow": 1}, "evolve": {"pink": 3}, "evolve_into": "Ivysaur", "point": 1}
+{"name": "Bulbasaur", "tier": "common", "cost": {"yellow": 4}, "bonus": {"yellow": 1}, "evolve": {"pink": 3}, "evolve_into": "Ivysaur", "point": 1}
+{"name": "Caterpie", "tier": "common", "cost": {"yellow": 1, "blue": 1, "red": 1, "black": 1}, "bonus": {"pink": 1}, "evolve": {"blue": 3}, "evolve_into": "Metapod", "point": 0}
+{"name": "Caterpie", "tier": "common", "cost": {"yellow": 1, "blue": 1, "black": 2}, "bonus": {"pink": 1}, "evolve": {"blue": 3}, "evolve_into": "Metapod", "point": 0}
+{"name": "Charmander", "tier": "common", "cost": {"black": 3, "pink": 2}, "bonus": {"blue": 1}, "evolve": {"yellow": 3}, "evolve_into": "Charmeleon", "point": 1}
+{"name": "Charmander", "tier": "common", "cost": {"blue": 4}, "bonus": {"blue": 1}, "evolve": {"yellow": 3}, "evolve_into": "Charmeleon", "point": 1}
+{"name": "Dratini", "tier": "common", "cost": {"yellow": 3, "red": 2}, "bonus": {"black": 1}, "evolve": {"blue": 3}, "evolve_into": "Dragonair", "point": 1}
+{"name": "Dratini", "tier": "common", "cost": {"black": 4}, "bonus": {"black": 1}, "evolve": {"blue": 3}, "evolve_into": "Dragonair", "point": 1}
+{"name": "Gastly", "tier": "common", "cost": {"blue": 1, "red": 1, "pink": 1, "black": 1}, "bonus": {"yellow": 1}, "evolve": {"black": 3}, "evolve_into": "Haunter", "point": 0}
+{"name": "Gastly", "tier": "common", "cost": {"red": 1, "pink": 2, "black": 1}, "bonus": {"yellow": 1}, "evolve": {"black": 3}, "evolve_into": "Haunter", "point": 0}
+{"name": "Geodude", "tier": "common", "cost": {"yellow": 1, "red": 2, "blue": 1}, "bonus": {"blue": 1}, "evolve": {"black": 3}, "evolve_into": "Graveler", "point": 0}
+{"name": "Geodude", "tier": "common", "cost": {"yellow": 1, "red": 1, "black": 1, "pink": 1}, "bonus": {"blue": 1}, "evolve": {"black": 3}, "evolve_into": "Graveler", "point": 0}
+{"name": "Machop", "tier": "common", "cost": {"blue": 1, "yellow": 1, "pink": 1, "black": 1}, "bonus": {"red": 1}, "evolve": {"yellow": 3}, "evolve_into": "Machoke", "point": 0}
+{"name": "Machop", "tier": "common", "cost": {"yellow": 2, "pink": 1, "black": 1}, "bonus": {"red": 1}, "evolve": {"yellow": 3}, "evolve_into": "Machoke", "point": 0}
+{"name": "Nidoran", "tier": "common", "cost": {"red": 2, "pink": 1}, "bonus": {"yellow": 1}, "evolve": {"blue": 2}, "evolve_into": "Nidorina", "point": 0}
+{"name": "Nidoran", "tier": "common", "cost": {"blue": 2, "yellow": 2}, "bonus": {"yellow": 1}, "evolve": {"blue": 2}, "evolve_into": "Nidorina", "point": 0}
+{"name": "Nidoran", "tier": "common", "cost": {"black": 3}, "bonus": {"yellow": 1}, "evolve": {"blue": 2}, "evolve_into": "Nidorina", "point": 0}
+{"name": "Oddish", "tier": "common", "cost": {"pink": 2, "red": 1}, "bonus": {"black": 1}, "evolve": {"yellow": 2}, "evolve_into": "Gloom", "point": 0}
+{"name": "Oddish", "tier": "common", "cost": {"yellow": 2, "black": 2}, "bonus": {"black": 1}, "evolve": {"yellow": 2}, "evolve_into": "Gloom", "point": 0}
+{"name": "Oddish", "tier": "common", "cost": {"blue": 3}, "bonus": {"black": 1}, "evolve": {"yellow": 2}, "evolve_into": "Gloom", "point": 0}
+{"name": "Pidgey", "tier": "common", "cost": {"yellow": 2, "black": 1}, "bonus": {"blue": 1}, "evolve": {"red": 2}, "evolve_into": "Pidgeotto", "point": 0}
+{"name": "Pidgey", "tier": "common", "cost": {"blue": 2, "red": 2}, "bonus": {"blue": 1}, "evolve": {"red": 2}, "evolve_into": "Pidgeotto", "point": 0}
+{"name": "Pidgey", "tier": "common", "cost": {"pink": 3}, "bonus": {"blue": 1}, "evolve": {"red": 2}, "evolve_into": "Pidgeotto", "point": 0}
+{"name": "Poliwag", "tier": "common", "cost": {"blue": 2, "yellow": 1}, "bonus": {"pink": 1}, "evolve": {"black": 2}, "evolve_into": "Poliwhirl", "point": 0}
+{"name": "Poliwag", "tier": "common", "cost": {"pink": 2, "black": 2}, "bonus": {"pink": 1}, "evolve": {"black": 2}, "evolve_into": "Poliwhirl", "point": 0}
+{"name": "Poliwag", "tier": "common", "cost": {"red": 3}, "bonus": {"pink": 1}, "evolve": {"black": 2}, "evolve_into": "Poliwhirl", "point": 0}
+{"name": "Squirtle", "tier": "common", "cost": {"pink": 3, "blue": 2}, "bonus": {"red": 1}, "evolve": {"black": 3}, "evolve_into": "Wartortle", "point": 1}
+{"name": "Squirtle", "tier": "common", "cost": {"red": 4}, "bonus": {"red": 1}, "evolve": {"black": 3}, "evolve_into": "Wartortle", "point": 1}
+{"name": "Weedle", "tier": "common", "cost": {"pink": 1, "blue": 1, "yellow": 1, "red": 1}, "bonus": {"black": 1}, "evolve": {"red": 3}, "evolve_into": "Kakuna", "point": 0}
+{"name": "Weedle", "tier": "common", "cost": {"pink": 1, "blue": 2, "red": 1}, "bonus": {"black": 1}, "evolve": {"red": 3}, "evolve_into": "Kakuna", "point": 0}
+{"name": "Charmeleon", "tier": "uncommon", "cost": {"yellow": 4, "black": 4, "red": 1}, "bonus": {"blue": 1}, "evolve": {"red": 4}, "evolve_into": "Charizard", "point": 3}
+{"name": "Charmeleon", "tier": "uncommon", "cost": {"blue": 6}, "bonus": {"blue": 1}, "evolve": {"red": 4}, "evolve_into": "Charizard", "point": 3}
+{"name": "Dragonair", "tier": "uncommon", "cost": {"blue": 4, "pink": 4, "yellow": 1}, "bonus": {"black": 1}, "evolve": {"yellow": 4}, "evolve_into": "Dragonite", "point": 3}
+{"name": "Dragonair", "tier": "uncommon", "cost": {"black": 6}, "bonus": {"black": 1}, "evolve": {"yellow": 4}, "evolve_into": "Dragonite", "point": 3}
+{"name": "Gloom", "tier": "uncommon", "cost": {"yellow": 3, "blue": 2, "red": 2}, "bonus": {"black": 1}, "evolve": {"yellow": 4}, "evolve_into": "Vileplume", "point": 1}
+{"name": "Gloom", "tier": "uncommon", "cost": {"black": 3, "blue": 2, "red": 2}, "bonus": {"black": 1}, "evolve": {"yellow": 4}, "evolve_into": "Vileplume", "point": 1}
+{"name": "Graveler", "tier": "uncommon", "cost": {"pink": 4, "yellow": 2, "black": 1}, "bonus": {"blue": 1}, "evolve": {"black": 3}, "evolve_into": "Golem", "point": 2}
+{"name": "Graveler", "tier": "uncommon", "cost": {"blue": 5, "red": 2}, "bonus": {"blue": 1}, "evolve": {"black": 3}, "evolve_into": "Golem", "point": 2}
+{"name": "Haunter", "tier": "uncommon", "cost": {"black": 4, "pink": 2, "red": 1}, "bonus": {"yellow": 1}, "evolve": {"red": 3}, "evolve_into": "Gengar", "point": 2}
+{"name": "Haunter", "tier": "uncommon", "cost": {"yellow": 5, "blue": 2}, "bonus": {"yellow": 1}, "evolve": {"red": 3}, "evolve_into": "Gengar", "point": 2}
+{"name": "Ivysaur", "tier": "uncommon", "cost": {"red": 4, "pink": 4, "blue": 1}, "bonus": {"yellow": 1}, "evolve": {"blue": 4}, "evolve_into": "Venusaur", "point": 3}
+{"name": "Ivysaur", "tier": "uncommon", "cost": {"yellow": 6}, "bonus": {"yellow": 1}, "evolve": {"blue": 4}, "evolve_into": "Venusaur", "point": 3}
+{"name": "Kadabra", "tier": "uncommon", "cost": {"red": 4, "yellow": 4, "black": 1}, "bonus": {"pink": 1}, "evolve": {"black": 4}, "evolve_into": "Alakazam", "point": 3}
+{"name": "Kadabra", "tier": "uncommon", "cost": {"pink": 6}, "bonus": {"pink": 1}, "evolve": {"black": 4}, "evolve_into": "Alakazam", "point": 3}
+{"name": "Kakuna", "tier": "uncommon", "cost": {"red": 4, "blue": 2, "pink": 1}, "bonus": {"black": 1}, "evolve": {"pink": 3}, "evolve_into": "Beedrill", "point": 2}
+{"name": "Kakuna", "tier": "uncommon", "cost": {"black": 5, "yellow": 2}, "bonus": {"black": 1}, "evolve": {"pink": 3}, "evolve_into": "Beedrill", "point": 2}
+{"name": "Machoke", "tier": "uncommon", "cost": {"yellow": 4, "black": 2, "blue": 1}, "bonus": {"red": 1}, "evolve": {"blue": 3}, "evolve_into": "Machamp", "point": 2}
+{"name": "Machoke", "tier": "uncommon", "cost": {"red": 5, "pink": 2}, "bonus": {"red": 1}, "evolve": {"blue": 3}, "evolve_into": "Machamp", "point": 2}
+{"name": "Metapod", "tier": "uncommon", "cost": {"blue": 4, "red": 2, "yellow": 1}, "bonus": {"pink": 1}, "evolve": {"yellow": 3}, "evolve_into": "Butterfree", "point": 2}
+{"name": "Metapod", "tier": "uncommon", "cost": {"pink": 5, "black": 2}, "bonus": {"pink": 1}, "evolve": {"yellow": 3}, "evolve_into": "Butterfree", "point": 2}
+{"name": "Nidorina", "tier": "uncommon", "cost": {"blue": 3, "pink": 2, "black": 2}, "bonus": {"yellow": 1}, "evolve": {"blue": 4}, "evolve_into": "Nidoqueen", "point": 1}
+{"name": "Nidorina", "tier": "uncommon", "cost": {"yellow": 3, "pink": 2, "red": 2}, "bonus": {"yellow": 1}, "evolve": {"blue": 4}, "evolve_into": "Nidoqueen", "point": 1}
+{"name": "Pidgeotto", "tier": "uncommon", "cost": {"red": 3, "yellow": 2, "pink": 2}, "bonus": {"blue": 1}, "evolve": {"red": 4}, "evolve_into": "Pidgeot", "point": 1}
+{"name": "Pidgeotto", "tier": "uncommon", "cost": {"blue": 3, "black": 2, "pink": 2}, "bonus": {"blue": 1}, "evolve": {"red": 4}, "evolve_into": "Pidgeot", "point": 1}
+{"name": "Poliwhirl", "tier": "uncommon", "cost": {"black": 3, "blue": 2, "red": 2}, "bonus": {"pink": 1}, "evolve": {"black": 4}, "evolve_into": "Poliwrath", "point": 1}
+{"name": "Poliwhirl", "tier": "uncommon", "cost": {"pink": 3, "blue": 2, "yellow": 2}, "bonus": {"pink": 1}, "evolve": {"black": 4}, "evolve_into": "Poliwrath", "point": 1}
+{"name": "Wartortle", "tier": "uncommon", "cost": {"black": 4, "blue": 4, "pink": 1}, "bonus": {"red": 1}, "evolve": {"pink": 4}, "evolve_into": "Blastoise", "point": 3}
+{"name": "Wartortle", "tier": "uncommon", "cost": {"red": 6}, "bonus": {"red": 1}, "evolve": {"pink": 4}, "evolve_into": "Blastoise", "point": 3}
+{"name": "Weepinbell", "tier": "uncommon", "cost": {"black": 2, "yellow": 2, "pink": 3}, "bonus": {"red": 1}, "evolve": {"pink": 4}, "evolve_into": "Victreebel", "point": 1}
+{"name": "Weepinbell", "tier": "uncommon", "cost": {"black": 2, "yellow": 2, "red": 3}, "bonus": {"red": 1}, "evolve": {"pink": 4}, "evolve_into": "Victreebel", "point": 1}
+{"name": "Alakazam", "tier": "rare", "cost": {"yellow": 7, "red": 3}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 5}
+{"name": "Beedrill", "tier": "rare", "cost": {"yellow": 4, "red": 6}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "Blastoise", "tier": "rare", "cost": {"blue": 7, "black": 3}, "bonus": {"red": 1}, "evolve": {}, "evolve_into": "", "point": 5}
+{"name": "Butterfree", "tier": "rare", "cost": {"blue": 6, "black": 4}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "Charizard", "tier": "rare", "cost": {"black": 7, "yellow": 3}, "bonus": {"blue": 1}, "evolve": {}, "evolve_into": "", "point": 5}
+{"name": "Dragonite", "tier": "rare", "cost": {"pink": 7, "blue": 3}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 5}
+{"name": "Gengar", "tier": "rare", "cost": {"black": 6, "blue": 4}, "bonus": {"yellow": 1}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "Golem", "tier": "rare", "cost": {"pink": 6, "red": 4}, "bonus": {"blue": 1}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "Machamp", "tier": "rare", "cost": {"yellow": 6, "pink": 4}, "bonus": {"red": 1}, "evolve": {}, "evolve_into": "", "point": 4}
+{"name": "Nidoqueen", "tier": "rare", "cost": {"yellow": 5, "red": 2, "pink": 2}, "bonus": {"yellow": 1}, "evolve": {}, "evolve_into": "", "point": 3}
+{"name": "Pidgeot", "tier": "rare", "cost": {"blue": 5, "black": 2, "yellow": 2}, "bonus": {"blue": 1}, "evolve": {}, "evolve_into": "", "point": 3}
+{"name": "Poliwrath", "tier": "rare", "cost": {"pink": 5, "red": 2, "yellow": 2}, "bonus": {"pink": 1}, "evolve": {}, "evolve_into": "", "point": 3}
+{"name": "Venusaur", "tier": "rare", "cost": {"red": 7, "pink": 3}, "bonus": {"yellow": 1}, "evolve": {}, "evolve_into": "", "point": 5}
+{"name": "Victreebel", "tier": "rare", "cost": {"red": 5, "black": 2, "blue": 2}, "bonus": {"red": 1}, "evolve": {}, "evolve_into": "", "point": 3}
+{"name": "Vileplume", "tier": "rare", "cost": {"black": 5, "blue": 2, "pink": 2}, "bonus": {"black": 1}, "evolve": {}, "evolve_into": "", "point": 3}
+{"name": "Lapras", "tier": "epic", "cost": {"master": 1, "black": 3, "blue": 2}, "bonus": {"red": 2}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "Ditto", "tier": "epic", "cost": {"master": 1, "pink": 3, "yellow": 2}, "bonus": {"blue": 2}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "Eevee", "tier": "epic", "cost": {"master": 1, "yellow": 3, "red": 2}, "bonus": {"black": 2}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "Aerodactyl", "tier": "epic", "cost": {"master": 1, "blue": 3, "pink": 2}, "bonus": {"yellow": 2}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "Snorlax", "tier": "epic", "cost": {"master": 1, "red": 3, "black": 2}, "bonus": {"pink": 2}, "evolve": {}, "evolve_into": "", "point": 0}
+{"name": "Articuno", "tier": "legendary", "cost": {"master": 1, "red": 3, "pink": 3, "black": 3}, "bonus": {"yellow": 2}, "evolve": {}, "evolve_into": "", "point": 2}
+{"name": "Zapdos", "tier": "legendary", "cost": {"master": 1, "blue": 3, "pink": 3, "yellow": 3}, "bonus": {"red": 2}, "evolve": {}, "evolve_into": "", "point": 2}
+{"name": "Moltres", "tier": "legendary", "cost": {"master": 1, "blue": 3, "yellow": 3, "black": 3}, "bonus": {"pink": 2}, "evolve": {}, "evolve_into": "", "point": 2}
+{"name": "mewtwo", "tier": "legendary", "cost": {"master": 1, "red": 3, "pink": 3, "blue": 3}, "bonus": {"black": 2}, "evolve": {}, "evolve_into": "", "point": 2}
+{"name": "Mew", "tier": "legendary", "cost": {"master": 1, "red": 3, "yellow": 3, "black": 3}, "bonus": {"blue": 2}, "evolve": {}, "evolve_into": "", "point": 2}

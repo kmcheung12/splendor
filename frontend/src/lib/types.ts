@@ -64,9 +64,9 @@ export type ActionEvent =
 
 export type ServerMessage =
   | LobbyState
-  | { type: 'state'; game: GameState }
+  | { type: 'state'; game: GameState; player_names?: Record<string, string> }
   | ActionEvent
   | { type: 'thinking'; player: string }
   | { type: 'human_turn'; player: string; valid_actions: number[] }
-  | { type: 'game_over'; winner: string; scores: Record<string, number> }
+  | { type: 'game_over'; winner: string; scores: Record<string, number>; rounds: number }
   | { type: 'error'; msg: string }

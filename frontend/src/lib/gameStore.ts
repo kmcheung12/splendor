@@ -10,8 +10,17 @@ export const activePlayer = writable<string | null>(null)
 export const thinkingPlayer = writable<string | null>(null)
 export const humanTurnActions = writable<number[]>([])
 export const pendingActionEvent = writable<ActionEvent | null>(null)
-export const gameOver = writable<{ winner: string; scores: Record<string, number> } | null>(null)
+export const gameOver = writable<{ winner: string; scores: Record<string, number>; rounds: number } | null>(null)
 export const phase = writable<string>('main')
+
+export const tokenSelectMode = writable(false)
+export const stagedTokens = writable<string[]>([])
+
+export const lastActions = writable<Record<string, string>>({})
+export const playerNames = writable<Record<string, string>>({})
+
+export const evolveFlash = writable<{ player: string; cardIndex: number } | null>(null)
+export const catchFlash = writable<{ player: string; card: string } | null>(null)
 
 export const isMyTurn = derived(
   [activePlayer, mySlot, gameState, humanTurnActions],

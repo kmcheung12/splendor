@@ -361,3 +361,120 @@ def test_agent_completes_full_game(agent_type, env):
 
     # Game must end
     assert not env.agents or all(env.terminations.values())
+
+
+# ── HumanAgent text matching ──────────────────────────────────────────────────
+
+from pokemon_splendor.agents.human import _match, _words
+
+
+def _valid(*descs: str) -> list[tuple[int, str]]:
+    """Build a fake valid-actions list with sequential IDs."""
+    return [(i, d) for i, d in enumerate(descs)]
+
+
+# _words
+
+def test_words_lowercases():
+    assert "red" in _words("Red")
+
+
+def test_words_strips_punctuation():
+    assert _words("yellow, pink, black") == {"yellow", "pink", "black"}
+
+
+def test_words_ignores_order():
+    assert _words("pink black yellow") == _words("yellow pink black")
+
+
+def test_words_strips_plus():
+    assert "master" in _words("Nidoran + Master token")
+    assert "nidoran" in _words("Nidoran + Master token")
+
+
+# _match — exact / subset matches
+
+def test_match_by_prefix_unique():
+    valid = _valid("Take yellow, pink, black", "Reserve Nidoran + Master token")
+    assert _match("take", valid) == 0  # unique match — only one action contains "take"
+
+
+def test_match_by_prefix_ambiguous(capsys):
+    valid = _valid("Take yellow, pink, black", "Take red, blue")
+    assert _match("take", valid) is None
+    assert "Ambiguous" in capsys.readouterr().out
+
+
+def test_match_take_order_independent():
+    valid = _valid("Take yellow, pink, black")
+    assert _match("take pink black yellow", valid) == 0
+
+
+def test_match_take_subset():
+    valid = _valid("Take yellow, pink, black")
+    assert _match("take yellow pink", valid) == 0  # subset: user words ⊆ desc words
+    assert _match("take yellow", valid) == 0
+
+
+def test_match_reserve_with_master():
+    valid = _valid("Reserve Nidoran + Master token", "Reserve Squirtle")
+    assert _match("reserve nidoran master", valid) == 0
+
+
+def test_match_reserve_without_master():
+    valid = _valid("Reserve Nidoran + Master token", "Reserve Squirtle")
+    assert _match("reserve squirtle", valid) == 1
+
+
+def test_match_catch_board():
+    valid = _valid("Catch Nidoran (common, 0pts)", "Catch Squirtle (common, 0pts)")
+    assert _match("catch nidoran", valid) == 0
+
+
+def test_match_catch_reserved():
+    valid = _valid("Catch reserved Gastly")
+    assert _match("catch reserved gastly", valid) == 0
+
+
+def test_match_discard():
+    valid = _valid("Discard red", "Discard blue")
+    assert _match("discard red", valid) == 0
+    assert _match("discard blue", valid) == 1
+
+
+def test_match_evolve():
+    valid = _valid("Evolve Charmander", "Evolve Squirtle")
+    assert _match("evolve charmander", valid) == 0
+
+
+def test_match_pass():
+    valid = _valid("Pass evolution")
+    assert _match("pass", valid) == 0
+
+
+def test_match_case_insensitive():
+    valid = _valid("Reserve Nidoran + Master token")
+    assert _match("RESERVE NIDORAN MASTER", valid) == 0
+
+
+# _match — ambiguous / no match
+
+def test_match_ambiguous_returns_none(capsys):
+    valid = _valid("Take red, blue", "Take red, yellow")
+    result = _match("take red", valid)
+    assert result is None
+    assert "Ambiguous" in capsys.readouterr().out
+
+
+def test_match_no_match_returns_none(capsys):
+    valid = _valid("Take red, blue")
+    result = _match("catch pikachu", valid)
+    assert result is None
+    assert "No matching" in capsys.readouterr().out
+
+
+def test_match_empty_input_matches_everything(capsys):
+    # Empty needle is subset of everything — ambiguous
+    valid = _valid("Take red", "Catch Nidoran (common, 0pts)")
+    result = _match("", valid)
+    assert result is None

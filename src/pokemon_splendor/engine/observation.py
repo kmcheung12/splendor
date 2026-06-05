@@ -2,7 +2,7 @@
 from collections import Counter
 import numpy as np
 from pokemon_splendor.models import Game, PokeballType, Tier, GamePhase
-from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost, get_evolvable_cards
+from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost, get_evolvable_cards, can_afford
 from pokemon_splendor.engine.actions import (
     TOTAL_ACTIONS, TAKE_DIFF_COMBOS, NORMAL_TYPES,
     TAKE_DIFF_START, CATCH_BOARD_START, CATCH_RESERVED_START,
@@ -108,37 +108,12 @@ def compute_mask(game: Game, player_name: str) -> np.ndarray:
     for slot_idx, pokemon in enumerate(all_slots):
         if pokemon is None:
             continue
-        effective = calculate_effective_cost(pokemon, player_bonuses)
-        master_req = effective.get(PokeballType.Master, 0)
-        if pokemon.tier in (Tier.Epic, Tier.Legendary):
-            master_req = max(master_req, 1)
-        master_have = ptokens.get(PokeballType.Master, 0)
-        if master_have < master_req:
-            catch_ok = False
-        else:
-            shortfall = sum(
-                max(0, needed - ptokens.get(pt, 0))
-                for pt, needed in effective.items()
-                if pt != PokeballType.Master
-            )
-            catch_ok = (master_have - master_req) >= shortfall
-        if catch_ok:
+        if can_afford(pokemon, player_bonuses, ptokens):
             mask[CATCH_BOARD_START + slot_idx] = True
 
     for i, pokemon in enumerate(player.reserved_cards):
-        effective = calculate_effective_cost(pokemon, player_bonuses)
-        master_req = effective.get(PokeballType.Master, 0)
-        if pokemon.tier in (Tier.Epic, Tier.Legendary):
-            master_req = max(master_req, 1)
-        master_have = ptokens.get(PokeballType.Master, 0)
-        if master_have >= master_req:
-            shortfall = sum(
-                max(0, needed - ptokens.get(pt, 0))
-                for pt, needed in effective.items()
-                if pt != PokeballType.Master
-            )
-            if (master_have - master_req) >= shortfall:
-                mask[CATCH_RESERVED_START + i] = True
+        if can_afford(pokemon, player_bonuses, ptokens):
+            mask[CATCH_RESERVED_START + i] = True
 
     if len(player.reserved_cards) < 3:
         reservable_slots = [i for i, p in enumerate(all_slots[:12]) if p is not None]

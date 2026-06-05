@@ -151,7 +151,8 @@ class PokemonSplendorEnv(AECEnv):
         }
 
         players = [Player(name=a) for a in self.possible_agents]
-        start = random.choice(players)
+        fpi = (options or {}).get('first_player_index')
+        start = players[fpi] if fpi is not None else random.choice(players)
 
         self.game = Game(
             players=players,

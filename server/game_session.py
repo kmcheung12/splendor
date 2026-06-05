@@ -49,6 +49,11 @@ class GameSession:
         slot.claimed_by = name
         return True
 
+    def rename_slot(self, ws: WebSocket, name: str) -> None:
+        slot = self.slot_for(ws)
+        if slot:
+            slot.claimed_by = name
+
     def release_slot(self, ws: WebSocket) -> None:
         for slot in self.slots:
             if slot.websocket is ws:
@@ -116,7 +121,8 @@ class GameSession:
 
     async def run(self) -> None:
         env = PokemonSplendorEnv(self.jsonl_path, num_players=self.config.num_players)
-        env.reset()
+        fpi = self.config.first_player_index
+        env.reset(options={'first_player_index': fpi} if fpi is not None else None)
 
         # Build agent for each slot (None = human-controlled)
         agents: dict[str, object | None] = {}
@@ -124,7 +130,12 @@ class GameSession:
             name = env.possible_agents[slot.index]
             agents[name] = None if slot.websocket else make_agent(slot.agent_type, env, name)
 
-        await self.broadcast({"type": "state", "game": serialize_game(env.game)})
+        player_names = {
+            env.possible_agents[slot.index]: slot.claimed_by or env.possible_agents[slot.index]
+            for slot in self.slots
+        }
+
+        await self.broadcast({"type": "state", "game": serialize_game(env.game), "player_names": player_names})
 
         for _ in range(100_000):
             if not env.agents:
@@ -159,11 +170,12 @@ class GameSession:
 
             await self.broadcast(build_action_event(env.game, agent_name, action))
             env.step(action)
-            await self.broadcast({"type": "state", "game": serialize_game(env.game)})
+            await self.broadcast({"type": "state", "game": serialize_game(env.game), "player_names": player_names})
 
         winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
         await self.broadcast({
             "type": "game_over",
             "winner": winner.name,
             "scores": {p.name: p.points for p in env.game.players},
+            "rounds": env.game.round,
         })

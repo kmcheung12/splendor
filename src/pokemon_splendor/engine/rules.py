@@ -23,6 +23,22 @@ def calculate_effective_cost(pokemon: Pokemon, player_bonuses: Counter) -> Count
     return cost
 
 
+def can_afford(card: Pokemon, bonuses: Counter, ptokens: Counter) -> bool:
+    ec = calculate_effective_cost(card, bonuses)
+    master_req = max(
+        ec.get(PokeballType.Master, 0),
+        1 if card.tier in (Tier.Epic, Tier.Legendary) else 0,
+    )
+    master_have = ptokens.get(PokeballType.Master, 0)
+    if master_have < master_req:
+        return False
+    shortfall = sum(
+        max(0, ec.get(pt, 0) - ptokens.get(pt, 0))
+        for pt in PokeballType if pt != PokeballType.Master
+    )
+    return (master_have - master_req) >= shortfall
+
+
 def _player_token_counter(player: Player) -> Counter:
     c: Counter = Counter()
     for t in player.tokens:

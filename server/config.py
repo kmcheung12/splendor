@@ -12,6 +12,7 @@ class GameConfig:
     num_players: int
     slots: list[SlotConfig]
     delay_ms: int = 800
+    first_player_index: int | None = None
 
     def __post_init__(self):
         assert 2 <= self.num_players <= 4

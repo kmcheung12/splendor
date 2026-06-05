@@ -8,6 +8,7 @@ from pokemon_splendor.engine.actions import (
 
 
 def build_action_event(game: Game, player_name: str, action: int) -> dict:
+    action = int(action)
     base = {"player": player_name}
 
     if TAKE_DIFF_START <= action < TAKE_SAME_START:

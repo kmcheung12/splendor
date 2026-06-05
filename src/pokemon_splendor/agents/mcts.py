@@ -1,6 +1,7 @@
 # src/pokemon_splendor/agents/mcts.py
 import copy
 import math
+import pickle
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Callable
@@ -25,6 +26,10 @@ _C = math.sqrt(2)
 OpponentPolicy = Callable[[Game, str], int]
 
 
+def _clone(game: Game) -> Game:
+    return pickle.loads(pickle.dumps(game, protocol=5))
+
+
 @dataclass
 class MCTSNode:
     game: Game
@@ -46,7 +51,7 @@ class MCTSAgent(RuleBasedAgent):
         self._opponent_policy = opponent_policy or make_early_capture_policy()
 
     def act(self, obs: np.ndarray, mask: np.ndarray) -> int:
-        game = copy.deepcopy(self._game)
+        game = _clone(self._game)
         player = next(p for p in game.players if p.name == self._player_name)
 
         if game.phase == GamePhase.DISCARD:
@@ -93,7 +98,7 @@ class MCTSAgent(RuleBasedAgent):
 
     def _expand(self, node: MCTSNode) -> MCTSNode:
         action = node.untried_actions.pop()
-        game = copy.deepcopy(node.game)
+        game = _clone(node.game)
         is_terminal = _step_inplace(game, action, self._player_name)
 
         # Handle forced discard for the MCTS agent
@@ -282,28 +287,28 @@ class MCTSAgent(RuleBasedAgent):
 
 def make_early_capture_policy() -> OpponentPolicy:
     """Standalone early-capture policy: catch cheapest, else take tokens toward cheapest."""
-    from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost
+    from pokemon_splendor.engine.rules import get_player_bonuses, calculate_effective_cost, can_afford, get_evolvable_cards
 
     def policy(game: Game, player_name: str) -> int:
         player = next(p for p in game.players if p.name == player_name)
-        mask = compute_mask(game, player_name)
         bonuses = get_player_bonuses(player)
+        ptokens = Counter(t.name for t in player.tokens)
 
         if game.phase == GamePhase.DISCARD:
-            tc = Counter(t.name for t in player.tokens)
             best_action, best_count = None, -1
             for ptype, idx in DISCARD_ACTION.items():
-                if mask[idx] and ptype != PokeballType.Master:
-                    count = tc.get(ptype, 0)
-                    if count > best_count:
-                        best_count = count
-                        best_action = idx
-            return best_action if best_action is not None else int(np.where(mask)[0][0])
+                if ptype == PokeballType.Master:
+                    continue
+                count = ptokens.get(ptype, 0)
+                if count > best_count:
+                    best_count = count
+                    best_action = idx
+            return best_action if best_action is not None else EVOLVE_PASS
 
         if game.phase == GamePhase.EVOLVE:
-            for a in range(EVOLVE_START, EVOLVE_PASS):
-                if mask[a]:
-                    return a
+            evolvable = get_evolvable_cards(game, player)
+            if evolvable:
+                return EVOLVE_START + player.cards.index(evolvable[0][0])
             return EVOLVE_PASS
 
         # MAIN: catch cheapest affordable
@@ -314,13 +319,11 @@ def make_early_capture_policy() -> OpponentPolicy:
         )
         catchable = []
         for slot_idx, card in enumerate(all_slots):
-            a = CATCH_BOARD_START + slot_idx
-            if mask[a] and card is not None:
-                catchable.append((a, card))
+            if card is not None and can_afford(card, bonuses, ptokens):
+                catchable.append((CATCH_BOARD_START + slot_idx, card))
         for i, card in enumerate(player.reserved_cards):
-            a = CATCH_RESERVED_START + i
-            if mask[a]:
-                catchable.append((a, card))
+            if can_afford(card, bonuses, ptokens):
+                catchable.append((CATCH_RESERVED_START + i, card))
 
         if catchable:
             return min(catchable,
@@ -328,8 +331,8 @@ def make_early_capture_policy() -> OpponentPolicy:
                        )[0]
 
         # Take tokens toward cheapest card
-        ptokens = Counter(t.name for t in player.tokens)
         all_cards = [(i, c) for i, c in enumerate(all_slots) if c is not None]
+        available_types = {pt for pt in NORMAL_TYPES if game.tokens.get(pt, 0) > 0}
         if all_cards:
             target = min(all_cards, key=lambda item: sum(
                 max(0, cnt - ptokens.get(pt, 0))
@@ -339,27 +342,23 @@ def make_early_capture_policy() -> OpponentPolicy:
             needed = Counter({pt: max(0, cnt - ptokens.get(pt, 0))
                               for pt, cnt in ec.items()})
             best_action, best_score = None, -1
-            from pokemon_splendor.engine.actions import TAKE_DIFF_COMBOS, TAKE_SAME_ACTION
             for i, combo in enumerate(TAKE_DIFF_COMBOS):
-                a = TAKE_DIFF_START + i
-                if not mask[a]:
+                if not all(pt in available_types for pt in combo):
                     continue
                 score = sum(min(needed.get(pt, 0), 1) for pt in combo)
                 if score > best_score:
                     best_score = score
-                    best_action = a
+                    best_action = TAKE_DIFF_START + i
             for pt in NORMAL_TYPES:
-                a = TAKE_SAME_ACTION[pt]
-                if mask[a] and needed.get(pt, 0) >= 2 and 2 > best_score:
+                if game.tokens.get(pt, 0) >= 4 and needed.get(pt, 0) >= 2 and 2 > best_score:
                     best_score = 2
-                    best_action = a
+                    best_action = TAKE_SAME_ACTION[pt]
             if best_action is not None:
                 return best_action
 
-        # Fallback: handle DISCARD mask in MAIN phase (no other actions available)
-        tc = Counter(t.name for t in player.tokens)
+        # Fallback: DISCARD in MAIN phase (no normal actions available)
         for ptype, idx in DISCARD_ACTION.items():
-            if mask[idx] and ptype != PokeballType.Master:
+            if ptype != PokeballType.Master and ptokens.get(ptype, 0) > 0:
                 return idx
 
         return int(np.where(mask)[0][0])

@@ -1,48 +1,85 @@
 <script lang="ts">
   import type { PokemonCard } from '../lib/types'
+  import { fly } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
+  import { createEventDispatcher } from 'svelte'
+  import CardSlot from './CardSlot.svelte'
 
   export let cards: PokemonCard[]
+  export let flyX = 0
+  export let flyY = 0
+  export let evolveActions: number[] = []
 
-  const TOKEN_COLORS: Record<string, string> = {
-    red: '#e74c3c', yellow: '#f1c40f', blue: '#3498db',
-    pink: '#e91e96', black: '#555', master: '#f39c12',
+  const dispatch = createEventDispatcher<{ evolve: number }>()
+
+  // Clip back cards to show tier bar + strip only (hide art + cost).
+  // tier bar ~4px + strip ~42px (half of available after cost) + borders ~2px = ~48px.
+  const STRIP_H = 48
+
+  function canEvolve(origIdx: number): boolean {
+    return evolveActions.includes(77 + origIdx)
   }
-  const TIER_GRAD: Record<string, string> = {
-    common:    'linear-gradient(135deg,#8B6914,#c9a64a)',
-    uncommon:  'linear-gradient(135deg,#7f8c8d,#bdc3c7)',
-    rare:      'linear-gradient(135deg,#c8a415,#f5d60a)',
-    epic:      'linear-gradient(135deg,#6c3483,#a569bd)',
-    legendary: 'linear-gradient(135deg,#154360,#2e86c1,#e74c3c,#f39c12)',
+
+  function debugHover(e: MouseEvent, i: number, stackLen: number) {
+    const item = e.currentTarget as HTMLElement
+    const card = item.querySelector('.card') as HTMLElement | null
+    const cs = getComputedStyle(item)
+    const parent = item.parentElement!
+    const pcs = getComputedStyle(parent)
+    console.group(`[CardStack] hover i=${i}/${stackLen - 1} (${i < stackLen - 1 ? 'back' : 'top'})`)
+    console.log('stack-item computed:', {
+      position: cs.position, zIndex: cs.zIndex, overflow: cs.overflow,
+      height: cs.height, transform: cs.transform,
+    })
+    console.log('.stack computed:', {
+      position: pcs.position, zIndex: pcs.zIndex, overflow: pcs.overflow,
+    })
+    if (card) {
+      const ccs = getComputedStyle(card)
+      console.log('.card computed:', {
+        position: ccs.position, zIndex: ccs.zIndex, transform: ccs.transform, overflow: ccs.overflow,
+      })
+      // Sample elementsFromPoint at card centre after a tick (transform takes a frame)
+      const rect = card.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      setTimeout(() => {
+        const els = document.elementsFromPoint(cx, cy)
+        console.log('elementsFromPoint at card centre (after 200ms):', els.map(el => `${el.tagName}${el.id ? '#'+el.id : ''}${el.className ? '.'+[...el.classList].join('.') : ''}`))
+      }, 200)
+    }
+    console.groupEnd()
   }
 
   $: groups = (() => {
-    const map: Record<string, PokemonCard[]> = {}
-    for (const c of cards) {
+    const map: Record<string, { card: PokemonCard; origIdx: number }[]> = {}
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i]
       const key = c.bonus[0] ?? 'none'
-      ;(map[key] ??= []).push(c)
+      ;(map[key] ??= []).push({ card: c, origIdx: i })
     }
     return Object.entries(map)
   })()
 </script>
 
 <div class="card-stacks">
-  {#each groups as [color, stack]}
+  {#each groups as [, stack]}
     <div class="stack">
-      {#each stack as card, i}
+      {#each stack as { card, origIdx }, i (origIdx)}
         <div
-          class="strip"
-          class:face-down={card.evolved}
-          style="background:{card.evolved ? '#333' : (TIER_GRAD[card.tier] ?? TIER_GRAD.common)}; top:{i * 18}px; z-index:{i};"
+          class="stack-item"
+          class:back={i < stack.length - 1}
+          in:fly={{ x: flyX, y: flyY, duration: 440, easing: cubicOut }}
+          on:mouseenter={(e) => debugHover(e, i, stack.length)}
         >
-          {#if !card.evolved}
-            <span class="strip-name">{card.name}</span>
-            {#if card.evolve_into}
-              <span class="strip-arrow">→ {card.evolve_into}</span>
-            {/if}
-            {#each card.bonus as b}
-              <span class="strip-pip" style="background:{TOKEN_COLORS[b]}"></span>
-            {/each}
-          {/if}
+          <CardSlot
+            {card}
+            tier={card.tier}
+            highlight={canEvolve(origIdx)}
+            dimmed={card.evolved}
+
+            on:click={() => canEvolve(origIdx) && dispatch('evolve', origIdx)}
+          />
         </div>
       {/each}
     </div>
@@ -51,15 +88,15 @@
 
 <style>
   .card-stacks { display: flex; gap: 8px; flex-wrap: wrap; }
-  .stack { position: relative; width: 90px; height: calc(18px * 4 + 32px); }
-  .strip {
-    position: absolute; left: 0; right: 0; height: 32px;
-    border-radius: 6px 6px 0 0; padding: 4px 6px;
-    display: flex; align-items: center; gap: 3px;
-    box-shadow: 0 2px 3px rgba(0,0,0,.3); overflow: hidden;
+
+  .stack { display: flex; flex-direction: column; gap: 3px; }
+
+  .stack-item { position: relative; z-index: 0; }
+  .stack-item:has(:global(.card:hover)) { z-index: 300; }
+  .stack-item.back {
+    height: 48px;
+    overflow: hidden;
+    flex-shrink: 0;
   }
-  .strip.face-down { opacity: .5; }
-  .strip-name { font-size: .6rem; font-weight: bold; color: white; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .strip-arrow { font-size: .5rem; color: rgba(255,255,255,.7); white-space: nowrap; }
-  .strip-pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(255,255,255,.4); }
+  .stack-item.back:has(:global(.card:hover)) { overflow: visible; }
 </style>

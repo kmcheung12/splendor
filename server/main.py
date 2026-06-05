@@ -1,8 +1,18 @@
 import uuid
 import json
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+for _name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+    logging.getLogger(_name).handlers = []
+    logging.getLogger(_name).propagate = True
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.config import GameConfig, SlotConfig
@@ -27,6 +37,7 @@ async def new_game(
     num_players: int = Body(2),
     agent_types: list[str] = Body(["random", "random"]),
     delay_ms: int = Body(800),
+    first_player_index: int | None = Body(None),
 ):
     assert len(agent_types) == num_players
     game_id = str(uuid.uuid4())[:8]
@@ -34,6 +45,7 @@ async def new_game(
         num_players=num_players,
         slots=[SlotConfig(i, t) for i, t in enumerate(agent_types)],
         delay_ms=delay_ms,
+        first_player_index=first_player_index,
     )
     session = GameSession(config, DATA_PATH)
     _sessions[game_id] = session
@@ -82,6 +94,13 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str):
                 await session.broadcast(session.lobby_state())
                 if not ok:
                     await websocket.send_text(json.dumps({"type": "error", "msg": "slot taken"}))
+
+            elif mtype == "rename":
+                name = msg.get("name", "Player")
+                logging.getLogger(__name__).info("rename: ws=%s name=%s", id(websocket), name)
+                session.rename_slot(websocket, name)
+                logging.getLogger(__name__).info("rename: slot after=%s", [s.claimed_by for s in session.slots])
+                await session.broadcast(session.lobby_state())
 
             elif mtype == "release":
                 session.release_slot(websocket)

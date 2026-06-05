@@ -5,6 +5,7 @@
 
   export let winner: string
   export let scores: Record<string, number>
+  export let rounds: number
 
   onMount(() => {
     const fn = (window as any).confetti
@@ -19,6 +20,7 @@
   <div class="banner">
     <span class="crown">👑</span>
     <h2>{winner} wins!</h2>
+    <div class="rounds">{rounds} rounds</div>
     <div class="scores">
       {#each Object.entries(scores).sort((a,b) => b[1]-a[1]) as [name, pts]}
         <div class="score-row" class:winner={name === winner}>
@@ -46,6 +48,7 @@
   }
   .crown { font-size: 2rem; }
   h2 { margin: 8px 0; color: #f1c40f; font-size: 1.4rem; }
+  .rounds { font-size: .8rem; color: rgba(255,255,255,.5); margin-bottom: 4px; }
   .scores { margin: 12px 0; display: flex; flex-direction: column; gap: 4px; }
   .score-row { display: flex; justify-content: space-between; gap: 24px; font-size: .9rem; }
   .score-row.winner { color: #f1c40f; font-weight: bold; }

@@ -1,4 +1,4 @@
-import copy
+import pickle
 from pokemon_splendor.models import Game, Player, GamePhase
 from pokemon_splendor.engine.rules import (
     apply_take_different_tokens, apply_take_same_tokens,
@@ -15,7 +15,7 @@ from pokemon_splendor.engine.actions import (
 
 def game_step(game: Game, action: int, player_name: str) -> tuple[Game, bool]:
     """Apply action to a deep copy of game. Returns (new_game, is_terminal)."""
-    game = copy.deepcopy(game)
+    game = pickle.loads(pickle.dumps(game, protocol=5))
     is_terminal = _step_inplace(game, action, player_name)
     return game, is_terminal
 

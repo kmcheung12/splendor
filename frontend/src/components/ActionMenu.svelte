@@ -8,10 +8,11 @@
   export let actions: number[] = []
   export let labels: string[] = []
 
-  const dispatch = createEventDispatcher<{ cancel: void }>()
+  const dispatch = createEventDispatcher<{ cancel: void; confirm: { actionId: number } }>()
 
   function confirm(actionId: number) {
     sendAction(actionId)
+    dispatch('confirm', { actionId })
     dispatch('cancel')
   }
 </script>
@@ -31,7 +32,7 @@
 
 <style>
   .popup {
-    position: fixed; z-index: 100;
+    position: fixed; z-index: 1030;
     background: #1a1a2e; border: 1px solid rgba(255,255,255,.2);
     border-radius: 8px; padding: 8px;
     display: flex; flex-direction: column; gap: 4px;
@@ -44,6 +45,6 @@
   }
   .action-btn { background: rgba(255,255,255,.1); color: white; }
   .action-btn:hover { background: rgba(241,196,15,.3); }
-  .cancel-btn { background: rgba(231,76,60,.15); color: #e74c3c; margin-top: 4px; }
-  .cancel-btn:hover { background: rgba(231,76,60,.3); }
+  .cancel-btn { background: transparent; color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.15); margin-top: 4px; }
+  .cancel-btn:hover { background: rgba(255,255,255,.08); color: white; }
 </style>

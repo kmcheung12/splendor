@@ -84,7 +84,7 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
   {
     id: 'ui_tiers_reservable',
     title: 'Common, Uncommon & Rare',
-    body: 'These three tiers can be reserved — hold a card for later and receive a golden Master Ball as a bonus.',
+    body: 'These three tiers can be reserved — hold a card for later and receive a Master Ball as a bonus.',
     targets: ['tier-reservable'],
     trigger: { type: 'human_turn' },
     completedBy: { type: 'dismiss_only' },
@@ -100,7 +100,7 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
   {
     id: 'ui_token_pool',
     title: 'Pokéball Pool',
-    body: 'Each turn you may take Pokéballs from here. Collect the right types to afford cards. The gold Master Ball is a wildcard.',
+    body: 'Each turn you may take Pokéballs from here. Collect the right types to afford cards. The Master Ball is a wildcard.',
     targets: ['token-pool'],
     trigger: { type: 'human_turn' },
     completedBy: { type: 'dismiss_only' },
@@ -124,6 +124,14 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
     completedBy: { type: 'action_event', eventType: 'take_tokens' },
   },
   {
+    id: 'ui_panel_tokens',
+    title: 'Your Pokéball Stash',
+    body: "Balls you collect appear here in your trainer panel. You can hold up to 10 — if you go over, you'll need to discard some.",
+    targets: ['own-panel-tokens'],
+    trigger: { type: 'human_turn' },
+    completedBy: { type: 'dismiss_only' },
+  },
+  {
     id: 'action_take_2_same',
     title: 'Take 2 of the Same',
     body: 'When a pile has 4 or more balls, you can take 2 of the same colour in one go.',
@@ -144,6 +152,14 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
     },
   },
   {
+    id: 'ui_panel_lanes',
+    title: 'Type Bonus Strip',
+    body: 'Your caught Pokémon appear here, grouped by type. Each one adds a permanent bonus — reducing future costs by 1 ball of that type. Stack enough and some cards become free!',
+    targets: ['own-panel-lanes'],
+    trigger: { type: 'human_turn' },
+    completedBy: { type: 'dismiss_only' },
+  },
+  {
     id: 'action_capture_reserve',
     title: 'Catch from Reserve',
     body: 'Your reserved cards sit in your panel. When you can afford one, click it to catch it.',
@@ -158,35 +174,25 @@ export const TUTORIAL_ITEMS: TutorialItem[] = [
   {
     id: 'action_reserve_master',
     title: 'Reserve + Master Ball',
-    body: "Reserve a Common, Uncommon, or Rare card to save it for later. You'll receive a golden Master Ball wildcard.",
+    body: "Reserve a Common, Uncommon, or Rare card to save it for later. You'll receive a Master Ball wildcard.",
     targets: ['tier-reservable'],
     trigger: { type: 'human_turn_action', min: 47, max: 59 },
     completedBy: { type: 'action_event', eventType: 'reserve_card' },
-  },
-
-  // ── Post-action UI reveals: shown immediately after player's first relevant action ─
-  {
-    id: 'ui_panel_tokens',
-    title: 'Your Pokéball Stash',
-    body: "Balls you collect appear here. You can hold up to 10 — if you go over, you'll need to discard some.",
-    targets: ['own-panel-tokens'],
-    trigger: { type: 'after_my_event', eventType: 'take_tokens' },
-    completedBy: { type: 'dismiss_only' },
   },
   {
     id: 'ui_panel_reserved',
     title: 'Reserved Pokémon',
     body: 'Reserved cards wait here. You can hold up to 3. Click one to catch it when you have enough balls.',
     targets: ['own-panel-reserved'],
-    trigger: { type: 'after_my_event', eventType: 'reserve_card' },
+    trigger: { type: 'human_turn' },
     completedBy: { type: 'dismiss_only' },
   },
   {
-    id: 'ui_panel_lanes',
-    title: 'Your Pokémon Collection',
-    body: 'Caught Pokémon are grouped by type. Each provides permanent bonus balls reducing future costs. Some can evolve into stronger forms.',
-    targets: ['own-panel-lanes'],
-    trigger: { type: 'after_my_event', eventType: 'catch_card' },
+    id: 'action_reserve_freedom',
+    title: 'Your Turn!',
+    body: 'Now it is your turn. Take a Pokéball or reserve a Pokémon — your call!',
+    targets: ['token-pool', 'tier-reservable'],
+    trigger: { type: 'human_turn' },
     completedBy: { type: 'dismiss_only' },
   },
 ]

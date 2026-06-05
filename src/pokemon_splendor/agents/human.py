@@ -1,12 +1,42 @@
 # src/pokemon_splendor/agents/human.py
 import re
 import numpy as np
+from rich.console import Console
+from rich.table import Table
+from rich import box
 from pokemon_splendor.agents.base import RuleBasedAgent, describe_action
 from pokemon_splendor.cli.renderer import render
+
+_console = Console()
 
 
 def _words(text: str) -> frozenset[str]:
     return frozenset(re.sub(r"[^a-z0-9]", " ", text.lower()).split())
+
+
+def _print_actions(valid: list[tuple[int, str]]) -> None:
+    groups: dict[str, list[tuple[int, str]]] = {}
+    for seq, (_, desc) in enumerate(valid):
+        header, _, rest = desc.partition(" ")
+        groups.setdefault(header, []).append((seq, rest))
+
+    table = Table(box=box.SIMPLE, show_header=True, pad_edge=False, title="Valid actions")
+    for header in groups:
+        table.add_column(header)
+
+    max_rows = max(len(rows) for rows in groups.values())
+    cols = list(groups.values())
+    for i in range(max_rows):
+        row = []
+        for col in cols:
+            if i < len(col):
+                seq, rest = col[i]
+                row.append(f"[{seq}] {rest}" if rest else f"[{seq}]")
+            else:
+                row.append("")
+        table.add_row(*row)
+
+    _console.print(table)
 
 
 def _match(user_input: str, valid: list[tuple[int, str]]) -> int | None:
@@ -31,9 +61,7 @@ class HumanAgent(RuleBasedAgent):
         player = self._player
         render(game)
         valid = [(i, describe_action(i, game, player)) for i in np.where(mask)[0]]
-        print("\nValid actions:")
-        for seq, (action_id, desc) in enumerate(valid):
-            print(f"  [{seq}] {desc}")
+        _print_actions(valid)
         while True:
             raw = input("Enter number or action: ").strip()
             if not raw:

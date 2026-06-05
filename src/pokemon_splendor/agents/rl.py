@@ -8,6 +8,15 @@ from pokemon_splendor.engine.env import PokemonSplendorEnv
 def _make_opponent(agent_type: str, pz_env, player_name: str):
     if agent_type == "random":
         return None  # None = random, handled inline in _play_others
+    if agent_type == "mcts" or agent_type.startswith("mcts:"):
+        from pokemon_splendor.agents.mcts import MCTSAgent, make_early_capture_policy, make_rl_policy
+        parts = agent_type.split(":")
+        sims = int(parts[1]) if len(parts) > 1 else 50
+        depth = int(parts[2]) if len(parts) > 2 else 2
+        opp_model = parts[3] if len(parts) > 3 else None
+        opp_policy = make_rl_policy(opp_model) if opp_model else make_early_capture_policy()
+        return MCTSAgent(pz_env, player_name, n_simulations=sims, depth=depth,
+                         opponent_policy=opp_policy)
     if agent_type.endswith(".zip"):
         return RLAgent(agent_type)
     if agent_type == "early-capture":
