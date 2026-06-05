@@ -1,7 +1,8 @@
 <!-- frontend/src/App.svelte -->
 <script lang="ts">
-  import { connect } from './lib/ws'
-  import { gameState, gameOver, playerNames } from './lib/gameStore'
+  import { onMount } from 'svelte'
+  import { connect, claimSlot, startGame } from './lib/ws'
+  import { gameState, gameOver, playerNames, lobbyState, mySlot } from './lib/gameStore'
   import { tutorialMode, initTutorial } from './lib/tutorialStore'
   import { BOARD_SELECTOR_MAP } from './lib/tutorial'
   import Lobby from './components/Lobby.svelte'
@@ -10,6 +11,16 @@
   import GameOver from './components/GameOver.svelte'
   import TutorialOverlay from './components/TutorialOverlay.svelte'
   import TutorialController from './components/TutorialController.svelte'
+  import MobileLayout from './components/MobileLayout.svelte'
+
+  let isMobile = false
+  onMount(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    isMobile = mq.matches
+    const handler = (e: MediaQueryListEvent) => { isMobile = e.matches }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  })
 
   let view: 'setup' | 'lobby' | 'game' = 'setup'
   let gameId = ''
@@ -51,9 +62,10 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          num_players: 2,
-          agent_types: ['human', 'mcts'],
+          num_players: 4,
+          agent_types: ['human', 'random', 'random', 'random'],
           delay_ms: 1200,
+          first_player_index: 0,
         }),
       })
       if (!res.ok) throw new Error(`Server error: ${res.status}`)
@@ -61,7 +73,7 @@
       gameId = data.game_id
       initTutorial()
       connect(gameId)
-      view = 'lobby'
+      view = 'game'
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create tutorial game'
     }
@@ -84,6 +96,12 @@
   }
 
   let joinCode = ''
+
+  $: if ($tutorialMode && $lobbyState && $mySlot === null) {
+    claimSlot(0, 'Player')
+    mySlot.set(0)
+    startGame()
+  }
 </script>
 
 <div class="app">
@@ -123,32 +141,43 @@
     <Lobby on:started={() => { view = 'game' }} />
 
   {:else if view === 'game'}
-    {#if $gameState}
-      {@const players = $gameState.players}
-      <div class="game-layout">
-        <div class="row-1">
-          {#if players[0]}<PlayerPanel player={players[0]} displayName={$playerNames[players[0].name] ?? players[0].name} position="top-left" />{/if}
-          <div class="board-col">
-<Board />
-          </div>
-          {#if players[1]}<PlayerPanel player={players[1]} displayName={$playerNames[players[1].name] ?? players[1].name} position="top-right" />{/if}
-        </div>
-        {#if players[2] || players[3]}
-          <div class="row-2">
-            {#if players[3]}<PlayerPanel player={players[3]} displayName={$playerNames[players[3].name] ?? players[3].name} position="bottom-left" />{/if}
-            {#if players[2]}<PlayerPanel player={players[2]} displayName={$playerNames[players[2].name] ?? players[2].name} position="bottom-right" />{/if}
-          </div>
+    {#if isMobile}
+      <div class="mobile-root">
+        {#if $gameState}
+          <MobileLayout />
+        {/if}
+        {#if $gameOver}
+          <GameOver winner={$gameOver.winner} scores={$gameOver.scores} rounds={$gameOver.rounds} />
         {/if}
       </div>
-    {/if}
+    {:else}
+      {#if $gameState}
+        {@const players = $gameState.players}
+        <div class="game-layout">
+          <div class="row-1">
+            {#if players[0]}<PlayerPanel player={players[0]} displayName={$playerNames[players[0].name] ?? players[0].name} position="top-left" />{/if}
+            <div class="board-col">
+<Board />
+            </div>
+            {#if players[1]}<PlayerPanel player={players[1]} displayName={$playerNames[players[1].name] ?? players[1].name} position="top-right" />{/if}
+          </div>
+          {#if players[2] || players[3]}
+            <div class="row-2">
+              {#if players[3]}<PlayerPanel player={players[3]} displayName={$playerNames[players[3].name] ?? players[3].name} position="bottom-left" />{/if}
+              {#if players[2]}<PlayerPanel player={players[2]} displayName={$playerNames[players[2].name] ?? players[2].name} position="bottom-right" />{/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
 
-    {#if $tutorialMode}
-      <TutorialController />
-      <TutorialOverlay selectorMap={BOARD_SELECTOR_MAP} />
-    {/if}
+      {#if $tutorialMode}
+        <TutorialController />
+        <TutorialOverlay selectorMap={BOARD_SELECTOR_MAP} />
+      {/if}
 
-    {#if $gameOver}
-      <GameOver winner={$gameOver.winner} scores={$gameOver.scores} rounds={$gameOver.rounds} />
+      {#if $gameOver}
+        <GameOver winner={$gameOver.winner} scores={$gameOver.scores} rounds={$gameOver.rounds} />
+      {/if}
     {/if}
   {/if}
 </div>
@@ -189,4 +218,23 @@
     gap: 8px;
   }
   .board-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+  /* ── Mobile root ── */
+  .mobile-root {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+
+  /* Force landscape on portrait phones */
+  @media screen and (max-width: 768px) and (orientation: portrait) {
+    .mobile-root {
+      position: fixed;
+      top: 50%; left: 50%;
+      width: 100svh;
+      height: 100svw;
+      transform: translate(-50%, -50%) rotate(90deg);
+      transform-origin: center center;
+    }
+  }
 </style>
