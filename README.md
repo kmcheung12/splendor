@@ -1,5 +1,14 @@
 # Pokemon Splendor
 
+Desktop
+![Desktop](desktop.png)
+
+Mobile
+<p>
+  <img src="mobile.png" width="45%">
+  <img src="mobile2.png" width="45%">
+</p>
+
 ## Play
 
 ```bash
