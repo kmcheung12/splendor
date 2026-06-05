@@ -1,13 +1,17 @@
 <!-- frontend/src/components/Lobby.svelte -->
 <script lang="ts">
   import { lobbyState, mySlot, isHost } from '../lib/gameStore'
-  import { claimSlot, releaseSlot, startGame, setDelay } from '../lib/ws'
+  import { claimSlot, releaseSlot, renameSlot, startGame, setDelay } from '../lib/ws'
   import { createEventDispatcher } from 'svelte'
 
   const dispatch = createEventDispatcher<{ started: void }>()
 
   let playerName = 'Player'
   let copied = false
+
+  function handleNameInput() {
+    if ($mySlot !== null) renameSlot(playerName)
+  }
 
   function claim(idx: number) {
     claimSlot(idx, playerName)
@@ -17,6 +21,10 @@
     releaseSlot()
   }
   function handleStart() {
+    if ($mySlot === null) {
+      claimSlot(0, playerName)
+      mySlot.set(0)
+    }
     startGame()
     dispatch('started')
   }
@@ -41,21 +49,21 @@
     </div>
 
     <label class="name-row">
-      Your name: <input bind:value={playerName} maxlength={16} />
+      Your name: <input bind:value={playerName} maxlength={16} on:input={handleNameInput} />
     </label>
 
     <div class="slots">
       {#each $lobbyState.slots as slot}
         <div class="slot" class:claimed={slot.claimed_by !== null}>
-          <span class="slot-idx">Slot {slot.index + 1}</span>
+          <span class="slot-idx">Seat {slot.index + 1}</span>
           <span class="agent">{slot.claimed_by ? '' : slot.agent_type}</span>
           {#if slot.claimed_by}
             <span class="claimer">👤 {slot.claimed_by}</span>
             {#if $mySlot === slot.index}
-              <button class="release-btn" on:click={release}>Release</button>
+              <button class="release-btn" on:click={release}>Leave</button>
             {/if}
           {:else}
-            <button on:click={() => claim(slot.index)} disabled={$mySlot !== null}>Claim</button>
+            <button on:click={() => claim(slot.index)} disabled={$mySlot !== null}>Sit</button>
           {/if}
         </div>
       {/each}
