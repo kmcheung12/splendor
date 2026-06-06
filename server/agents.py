@@ -39,7 +39,7 @@ def make_agent(agent_type: str, env: PokemonSplendorEnv, player_name: str,
 
     if agent_type == "mctsrl":
         from pokemon_splendor.agents.mcts import MCTSAgent, make_rl_policy
-        opponent_policy = make_rl_policy("v7-sp7")
+        opponent_policy = make_rl_policy("v7-sp15")
         return MCTSAgent(env, player_name, n_simulations=mcts_sims, depth=mcts_depth,
                          opponent_policy=opponent_policy)
 
