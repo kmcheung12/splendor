@@ -85,6 +85,12 @@
   }
 
   let cardDetail: { card: PokemonCard; tier: string; actions: { id: number; label: string }[] } | null = null
+  let jumpingKey: string | null = null
+
+  function triggerJump(key: string) {
+    jumpingKey = key
+    setTimeout(() => { jumpingKey = null }, 480)
+  }
 
   function handleTokenClick(t: string) {
     if (!canAddToken(t)) return
@@ -95,6 +101,7 @@
 
   function handleCardClick(card: PokemonCard, tier: string, slotIdx: number) {
     if ($tokenSelectMode) { stagedTokens.set([]); tokenSelectMode.set(false); return }
+    triggerJump(`${tier}-${slotIdx}`)
     const absSlot = (TIER_ABS_OFFSET[tier] ?? 0) + slotIdx
     const candidates = absSlot < 12
       ? [30 + absSlot, 47 + absSlot, 59 + absSlot]
@@ -157,6 +164,7 @@
           class="bcard"
           class:bcard-highlight={$isMyTurn && card !== null && slotHasValidAction(absSlot)}
           class:catch-reveal={$catchFlash?.card === card?.name}
+          class:jumping={jumpingKey === `epic-${slotIdx}`}
           data-tier="epic" data-slot={slotIdx}
           style={card ? `background:${CARDBG[card.bonus[0]] ?? '#2a2a2a'}` : 'background:#1a1a2e'}
           role="button" tabindex="0"
@@ -168,7 +176,12 @@
             <div class="bcard-head">
               <div class="bcard-names">
                 <span class="bcard-name">{card.name}</span>
-                {#if card.evolve_into}<span class="bcard-evo">▸ {card.evolve_into}</span>{/if}
+                {#if card.evolve_into}
+                  <span class="bcard-evo">▸ {card.evolve_into}</span>
+                  {#if card.evolve?.length}
+                    <span class="bcard-evo-cost">{#each card.evolve as g}<img src={BALL[g]} alt={g} width="11" height="11" draggable="false">{/each}</span>
+                  {/if}
+                {/if}
               </div>
               <span class="bcard-bonus" style="background:radial-gradient({COL[card.bonus[0]] ?? '#888'}44 0%,transparent 70%)">
                 <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="13" height="13" draggable="false">
@@ -194,6 +207,7 @@
           class="bcard"
           class:bcard-highlight={$isMyTurn && card !== null && slotHasValidAction(absSlot)}
           class:catch-reveal={$catchFlash?.card === card?.name}
+          class:jumping={jumpingKey === `legendary-${slotIdx}`}
           data-tier="legendary" data-slot={slotIdx}
           style={card ? `background:${CARDBG[card.bonus[0]] ?? '#2a2a2a'}` : 'background:#1a1a2e'}
           role="button" tabindex="0"
@@ -205,7 +219,12 @@
             <div class="bcard-head">
               <div class="bcard-names">
                 <span class="bcard-name">{card.name}</span>
-                {#if card.evolve_into}<span class="bcard-evo">▸ {card.evolve_into}</span>{/if}
+                {#if card.evolve_into}
+                  <span class="bcard-evo">▸ {card.evolve_into}</span>
+                  {#if card.evolve?.length}
+                    <span class="bcard-evo-cost">{#each card.evolve as g}<img src={BALL[g]} alt={g} width="11" height="11" draggable="false">{/each}</span>
+                  {/if}
+                {/if}
               </div>
               <span class="bcard-bonus" style="background:radial-gradient({COL[card.bonus[0]] ?? '#888'}44 0%,transparent 70%)">
                 <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="13" height="13" draggable="false">
@@ -235,6 +254,7 @@
           class="bcard"
           class:bcard-highlight={$isMyTurn && card !== null && slotHasValidAction(absSlot)}
           class:catch-reveal={$catchFlash?.card === card?.name}
+          class:jumping={jumpingKey === `${row.tier}-${slotIdx}`}
           data-tier={row.tier} data-slot={slotIdx}
           style={card ? `background:${CARDBG[card.bonus[0]] ?? '#2a2a2a'}` : 'background:#1a1a2e'}
           role="button" tabindex="0"
@@ -246,7 +266,12 @@
             <div class="bcard-head">
               <div class="bcard-names">
                 <span class="bcard-name">{card.name}</span>
-                {#if card.evolve_into}<span class="bcard-evo">▸ {card.evolve_into}</span>{/if}
+                {#if card.evolve_into}
+                  <span class="bcard-evo">▸ {card.evolve_into}</span>
+                  {#if card.evolve?.length}
+                    <span class="bcard-evo-cost">{#each card.evolve as g}<img src={BALL[g]} alt={g} width="11" height="11" draggable="false">{/each}</span>
+                  {/if}
+                {/if}
               </div>
               <span class="bcard-bonus" style="background:radial-gradient({COL[card.bonus[0]] ?? '#888'}44 0%,transparent 70%)">
                 <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="13" height="13" draggable="false">
@@ -315,11 +340,21 @@
   .bcard img { image-rendering: pixelated; display: block; }
   .bcard.bcard-highlight { cursor: pointer; outline: 2px solid #ffd23f; }
   .bcard.bcard-highlight:hover { filter: brightness(1.1); }
+  .bcard.jumping { overflow: visible; z-index: 10; }
+  .bcard.jumping .bcard-art img {
+    animation: poke-jump 480ms cubic-bezier(.23,.54,.46,.77) forwards;
+  }
+  @keyframes poke-jump {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-18px); animation-timing-function: cubic-bezier(.54,.23,.77,.46); }
+    100% { transform: translateY(0px); }
+  }
   .bcard-bar { height: 3px; flex: none; }
   .bcard-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 3px 4px 0; gap: 3px; }
   .bcard-names { min-width: 0; display: flex; flex-direction: column; }
   .bcard-name { font-family: 'Silkscreen', monospace; font-weight: 700; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bcard-evo { font-family: 'Silkscreen', monospace; font-size: 6px; color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bcard-evo-cost { display: flex; gap: 1px; flex-wrap: wrap; }
   .bcard-bonus { flex: none; width: 18px; height: 18px; border-radius: 10px; display: grid; place-items: center; }
   .bcard-art { flex: 1; display: grid; place-items: center; min-height: 0; }
   .bcard-cost { display: flex; flex-wrap: wrap; gap: 1px; padding: 0 22px 3px 4px; align-content: flex-end; }

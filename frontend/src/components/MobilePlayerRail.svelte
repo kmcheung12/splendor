@@ -12,6 +12,7 @@
   const dispatch = createEventDispatcher<{ expand: void }>()
 
   const TOKEN_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
+  const BONUS_ORDER = ['red', 'yellow', 'blue', 'pink', 'black']
   const TIER_BAR: Record<string, string> = {
     common: '#b08d57', uncommon: '#c7ccd1', rare: '#e8b923',
     epic: '#a55fd0', legendary: 'linear-gradient(90deg,#3aa0e0,#f0852e)',
@@ -33,6 +34,11 @@
     const id = DEX[name.toLowerCase()]
     return id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : ''
   }
+
+  $: bonuses = BONUS_ORDER.reduce<Record<string, number>>((acc, c) => {
+    acc[c] = player.cards.filter(card => !card.evolved && card.bonus[0] === c).length
+    return acc
+  }, {})
 
   $: isActive = $activePlayer === player.name
   $: avatarNum = (player.name.match(/\d+/) ?? ['?'])[0]
@@ -56,6 +62,16 @@
         {@const n = player.tokens[t] ?? 0}
         <span class="tm" class:tz={n === 0}>
           <img src={BALL[t]} alt={t} width="13" height="13" draggable="false">
+          <i>{n}</i>
+        </span>
+      {/each}
+    </div>
+    <div class="field-label">Bonus</div>
+    <div class="bmini">
+      {#each BONUS_ORDER as c}
+        {@const n = bonuses[c] ?? 0}
+        <span class="tm" class:tz={n === 0}>
+          <img src={BALL[c]} alt={c} width="13" height="13" draggable="false">
           <i>{n}</i>
         </span>
       {/each}
@@ -123,6 +139,7 @@
   .field-label { font-family: 'Silkscreen', monospace; font-size: 7px; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.5); }
 
   .tmini { display: flex; flex-wrap: wrap; gap: 3px 7px; }
+  .bmini { display: flex; flex-wrap: wrap; gap: 3px 7px; }
   .tmini img { image-rendering: pixelated; display: block; }
   .tm { display: inline-flex; align-items: center; gap: 2px; }
   .tm i { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #fff; font-style: normal; }

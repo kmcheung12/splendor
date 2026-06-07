@@ -52,18 +52,25 @@
       <div class="card-head">
         <div class="card-names">
           <span class="card-name">{card.name}</span>
-          {#if card.evolve_into}<span class="card-evo">▸ {card.evolve_into}</span>{/if}
+          {#if card.evolve_into}
+            <span class="card-evo">▸ {card.evolve_into}</span>
+            {#if card.evolve?.length}
+              <span class="card-evo-cost">
+                {#each card.evolve as g}<img src={BALL[g]} alt={g} width="24" height="24" draggable="false">{/each}
+              </span>
+            {/if}
+          {/if}
         </div>
         <span class="card-bonus" style="background:radial-gradient({COL[color] ?? '#888'}44 0%,transparent 70%)">
-          <img src={BALL[color]} alt={color} width="26" height="26" draggable="false">
+          <img src={BALL[color]} alt={color} width="39" height="39" draggable="false">
         </span>
       </div>
       <div class="card-art">
-        <img src={spriteUrl(card.name)} alt={card.name} width="76" height="76" draggable="false">
+        <img src={spriteUrl(card.name)} alt={card.name} width="114" height="114" draggable="false">
       </div>
       {#if card.cost.length}
         <div class="card-cost">
-          {#each card.cost as gem}<img src={BALL[gem]} alt={gem} width="16" height="16" draggable="false">{/each}
+          {#each card.cost as gem}<img src={BALL[gem]} alt={gem} width="24" height="24" draggable="false">{/each}
         </div>
       {/if}
       <div class="card-pts" style="box-shadow:inset 0 0 0 2px {COL[color] ?? '#888'}">{card.point}</div>
@@ -80,7 +87,7 @@
 
 <style>
   .backdrop {
-    position: absolute; inset: 0;
+    position: fixed; inset: 0;
     background: rgba(5,5,12,.72);
     display: grid; place-items: center; z-index: 60;
     animation: fade .14s ease;
@@ -97,25 +104,26 @@
   }
 
   .card {
-    width: 200px; height: 160px; position: relative; color: #fff;
-    border: 3px solid #0c0d12; border-radius: 6px; overflow: hidden;
+    width: 300px; height: 240px; position: relative; color: #fff;
+    border: 3px solid #0c0d12; border-radius: 3px; overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 4px 4px 0 rgba(0,0,0,.5);
     display: flex; flex-direction: column;
   }
   .card img { image-rendering: pixelated; display: block; }
-  .card-bar { height: 5px; flex: none; }
-  .card-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 5px 6px 0; gap: 4px; }
-  .card-names { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .card-name { font-family: 'Silkscreen', monospace; font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-evo  { font-family: 'Silkscreen', monospace; font-size: 8px; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-bonus { flex: none; width: 32px; height: 32px; border-radius: 16px; display: grid; place-items: center; }
+  .card-bar { height: 7px; flex: none; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 9px 0; gap: 6px; }
+  .card-names { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .card-name { font-family: 'Silkscreen', monospace; font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-evo  { font-family: 'Silkscreen', monospace; font-size: 12px; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-evo-cost { display: flex; gap: 2px; flex-wrap: wrap; }
+  .card-bonus { flex: none; width: 48px; height: 48px; border-radius: 24px; display: grid; place-items: center; }
   .card-art { flex: 1; display: grid; place-items: center; min-height: 0; }
-  .card-cost { display: flex; flex-wrap: wrap; gap: 2px; padding: 0 40px 4px 6px; align-content: flex-end; }
+  .card-cost { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 60px 6px 9px; align-content: flex-end; }
   .card-pts {
-    position: absolute; right: 5px; bottom: 5px;
-    width: 26px; height: 26px; display: grid; place-items: center;
-    border-radius: 4px; background: #0c0d12;
-    font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fff;
+    position: absolute; right: 7px; bottom: 7px;
+    width: 39px; height: 39px; display: grid; place-items: center;
+    border-radius: 6px; background: #0c0d12;
+    font-family: 'Press Start 2P', monospace; font-size: 16px; color: #fff;
   }
 
   .btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
