@@ -1,5 +1,8 @@
 # Pokemon Splendor
 
+Online demo
+https://geo-dude.com/splendor
+
 Desktop
 ![Desktop](desktop.png)
 
