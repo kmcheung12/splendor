@@ -97,6 +97,10 @@
 
   let joinCode = ''
 
+  $: if (view === 'lobby' && $gameState) {
+    view = 'game'
+  }
+
   $: if ($tutorialMode && $lobbyState && $mySlot === null) {
     claimSlot(0, 'Player')
     mySlot.set(0)
