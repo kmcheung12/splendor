@@ -10,6 +10,13 @@
 
   const dispatch = createEventDispatcher<{ close: void; action: number }>()
 
+  let jumping = false
+  function startJump() {
+    if (jumping) return
+    jumping = true
+    setTimeout(() => { jumping = false }, 480)
+  }
+
   const COL: Record<string, string> = {
     red: '#ff3434', yellow: '#f1c40f', blue: '#3498db',
     pink: '#ffa3da', black: '#9aa0a6', master: '#a569bd',
@@ -65,8 +72,10 @@
           <img src={BALL[color]} alt={color} width="39" height="39" draggable="false">
         </span>
       </div>
-      <div class="card-art">
-        <img src={spriteUrl(card.name)} alt={card.name} width="114" height="114" draggable="false">
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div class="card-art" on:click|stopPropagation={startJump}>
+        <img src={spriteUrl(card.name)} alt={card.name} width="114" height="114" draggable="false" class:jumping>
       </div>
       {#if card.cost.length}
         <div class="card-cost">
@@ -117,7 +126,15 @@
   .card-evo  { font-family: 'Silkscreen', monospace; font-size: 12px; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card-evo-cost { display: flex; gap: 2px; flex-wrap: wrap; }
   .card-bonus { flex: none; width: 48px; height: 48px; border-radius: 24px; display: grid; place-items: center; }
-  .card-art { flex: 1; display: grid; place-items: center; min-height: 0; }
+  .card-art { flex: 1; display: grid; place-items: center; min-height: 0; cursor: pointer; }
+  .card-art img.jumping {
+    animation: poke-jump 480ms cubic-bezier(.23,.54,.46,.77) forwards;
+  }
+  @keyframes poke-jump {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-22px); animation-timing-function: cubic-bezier(.54,.23,.77,.46); }
+    100% { transform: translateY(0px); }
+  }
   .card-cost { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 60px 6px 9px; align-content: flex-end; }
   .card-pts {
     position: absolute; right: 7px; bottom: 7px;
