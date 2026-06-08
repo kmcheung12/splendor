@@ -48,6 +48,13 @@
     return id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : ''
   }
 
+  const GEM_ORDER = ['red', 'yellow', 'blue', 'pink', 'black']
+  function groupCost(gems: string[]): { c: string; n: number }[] {
+    const counts: Record<string, number> = {}
+    for (const g of gems) counts[g] = (counts[g] ?? 0) + 1
+    return GEM_ORDER.filter(c => counts[c]).map(c => ({ c, n: counts[c] }))
+  }
+
   const TIER_ABS_OFFSET: Record<string, number> = {
     common: 0, uncommon: 4, rare: 8, epic: 12, legendary: 13,
   }
@@ -139,6 +146,7 @@
           class:pulse={$isMyTurn && canAddToken(t)}
           data-token-type={t}
           disabled={count === 0}
+          style="--gc:{COL[t]}"
           on:click={() => handleTokenClick(t)}
         >
           <img src={BALL[t]} alt={t} width="20" height="20" draggable="false">
@@ -179,7 +187,11 @@
                 {#if card.evolve_into}
                   <span class="bcard-evo">▸ {card.evolve_into}</span>
                   {#if card.evolve?.length}
-                    <span class="bcard-evo-cost">{#each card.evolve as g}<img src={BALL[g]} alt={g} width="11" height="11" draggable="false">{/each}</span>
+                    <span class="bcard-evo-cost">
+                      {#each groupCost(card.evolve) as g}
+                        <span class="cv-u cv-u-xs" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-xs">{g.n}</span><img class="cv-mb cv-mb-xs" src={BALL[g.c]} alt={g.c} width="7" height="7" draggable="false"></span>
+                      {/each}
+                    </span>
                   {/if}
                 {/if}
               </div>
@@ -189,7 +201,29 @@
             </div>
             <div class="bcard-art"><img src={spriteUrl(card.name)} alt={card.name} width="38" height="38" draggable="false"></div>
             <div class="bcard-cost">
-              {#each card.cost as gem}<img src={BALL[gem]} alt={gem} width="11" height="11" draggable="false">{/each}
+              {#if card.cost.length}
+                {@const grouped = groupCost(card.cost)}
+                {#if grouped.length > 3}
+                  <div class="cv cv-stack">
+                    <div class="cv-row">
+                      {#each grouped.slice(0, grouped.length - 3) as g}
+                        <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                      {/each}
+                    </div>
+                    <div class="cv-row">
+                      {#each grouped.slice(-3) as g}
+                        <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                      {/each}
+                    </div>
+                  </div>
+                {:else}
+                  <div class="cv">
+                    {#each grouped as g}
+                      <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                    {/each}
+                  </div>
+                {/if}
+              {/if}
             </div>
             <div class="bcard-pts" style="box-shadow:inset 0 0 0 2px {COL[card.bonus[0]] ?? '#888'}">{card.point}</div>
           {/if}
@@ -222,7 +256,11 @@
                 {#if card.evolve_into}
                   <span class="bcard-evo">▸ {card.evolve_into}</span>
                   {#if card.evolve?.length}
-                    <span class="bcard-evo-cost">{#each card.evolve as g}<img src={BALL[g]} alt={g} width="11" height="11" draggable="false">{/each}</span>
+                    <span class="bcard-evo-cost">
+                      {#each groupCost(card.evolve) as g}
+                        <span class="cv-u cv-u-xs" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-xs">{g.n}</span><img class="cv-mb cv-mb-xs" src={BALL[g.c]} alt={g.c} width="7" height="7" draggable="false"></span>
+                      {/each}
+                    </span>
                   {/if}
                 {/if}
               </div>
@@ -232,7 +270,29 @@
             </div>
             <div class="bcard-art"><img src={spriteUrl(card.name)} alt={card.name} width="38" height="38" draggable="false"></div>
             <div class="bcard-cost">
-              {#each card.cost as gem}<img src={BALL[gem]} alt={gem} width="11" height="11" draggable="false">{/each}
+              {#if card.cost.length}
+                {@const grouped = groupCost(card.cost)}
+                {#if grouped.length > 3}
+                  <div class="cv cv-stack">
+                    <div class="cv-row">
+                      {#each grouped.slice(0, grouped.length - 3) as g}
+                        <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                      {/each}
+                    </div>
+                    <div class="cv-row">
+                      {#each grouped.slice(-3) as g}
+                        <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                      {/each}
+                    </div>
+                  </div>
+                {:else}
+                  <div class="cv">
+                    {#each grouped as g}
+                      <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                    {/each}
+                  </div>
+                {/if}
+              {/if}
             </div>
             <div class="bcard-pts" style="box-shadow:inset 0 0 0 2px {COL[card.bonus[0]] ?? '#888'}">{card.point}</div>
           {/if}
@@ -269,7 +329,11 @@
                 {#if card.evolve_into}
                   <span class="bcard-evo">▸ {card.evolve_into}</span>
                   {#if card.evolve?.length}
-                    <span class="bcard-evo-cost">{#each card.evolve as g}<img src={BALL[g]} alt={g} width="11" height="11" draggable="false">{/each}</span>
+                    <span class="bcard-evo-cost">
+                      {#each groupCost(card.evolve) as g}
+                        <span class="cv-u cv-u-xs" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-xs">{g.n}</span><img class="cv-mb cv-mb-xs" src={BALL[g.c]} alt={g.c} width="7" height="7" draggable="false"></span>
+                      {/each}
+                    </span>
                   {/if}
                 {/if}
               </div>
@@ -279,7 +343,29 @@
             </div>
             <div class="bcard-art"><img src={spriteUrl(card.name)} alt={card.name} width="38" height="38" draggable="false"></div>
             <div class="bcard-cost">
-              {#each card.cost as gem}<img src={BALL[gem]} alt={gem} width="11" height="11" draggable="false">{/each}
+              {#if card.cost.length}
+                {@const grouped = groupCost(card.cost)}
+                {#if grouped.length > 3}
+                  <div class="cv cv-stack">
+                    <div class="cv-row">
+                      {#each grouped.slice(0, grouped.length - 3) as g}
+                        <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                      {/each}
+                    </div>
+                    <div class="cv-row">
+                      {#each grouped.slice(-3) as g}
+                        <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                      {/each}
+                    </div>
+                  </div>
+                {:else}
+                  <div class="cv">
+                    {#each grouped as g}
+                      <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="8" height="8" draggable="false"></span>
+                    {/each}
+                  </div>
+                {/if}
+              {/if}
             </div>
             <div class="bcard-pts" style="box-shadow:inset 0 0 0 2px {COL[card.bonus[0]] ?? '#888'}">{card.point}</div>
           {/if}
@@ -309,7 +395,7 @@
   .card-row { display: flex; gap: 6px; width: 462px; }
 
   .pool-tok {
-    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.07); border: 1px solid var(--gc, rgba(255,255,255,.12));
     border-radius: 7px; display: flex; flex-direction: column;
     align-items: center; gap: 1px; padding: 4px 0; cursor: default;
   }
@@ -354,10 +440,25 @@
   .bcard-names { min-width: 0; display: flex; flex-direction: column; }
   .bcard-name { font-family: 'Silkscreen', monospace; font-weight: 700; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bcard-evo { font-family: 'Silkscreen', monospace; font-size: 6px; color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bcard-evo-cost { display: flex; gap: 1px; flex-wrap: wrap; }
+  .bcard-evo-cost { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
+  .cv-u-xs { width: 12px; height: 12px; }
+  .cv-n-xs { font-size: 5px; }
+  .cv-mb-xs { width: 7px; height: 7px; }
   .bcard-bonus { flex: none; width: 18px; height: 18px; border-radius: 10px; display: grid; place-items: center; }
   .bcard-art { flex: 1; display: grid; place-items: center; min-height: 0; }
-  .bcard-cost { display: flex; flex-wrap: wrap; gap: 1px; padding: 0 22px 3px 4px; align-content: flex-end; }
+  .bcard-cost { display: flex; align-items: flex-end; padding: 0 22px 3px 4px; }
+
+  /* count-forward token (variant B) */
+  .cv { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
+  .cv-stack { display: flex; flex-direction: column; gap: 2px; }
+  .cv-row { display: flex; gap: 2px; align-items: center; }
+  .cv-u {
+    position: relative; width: 16px; height: 16px; border-radius: 50%; flex: none;
+    background: #0c0d12; display: grid; place-items: center;
+    box-shadow: inset 0 0 0 2px var(--gc, #555);
+  }
+  .cv-n { font-family: 'Press Start 2P', monospace; font-size: 7px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+  .cv-mb { position: absolute; right: -2px; bottom: -2px; image-rendering: pixelated; display: block; }
   .bcard-pts {
     position: absolute; right: 3px; bottom: 3px; width: 18px; height: 18px;
     display: grid; place-items: center; border-radius: 3px;

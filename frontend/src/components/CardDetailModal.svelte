@@ -48,6 +48,14 @@
   }
 
   $: color = card.bonus[0] ?? 'black'
+
+  const GEM_ORDER = ['red', 'yellow', 'blue', 'pink', 'black']
+  function groupCost(gems: string[]): { c: string; n: number }[] {
+    const counts: Record<string, number> = {}
+    for (const g of gems) counts[g] = (counts[g] ?? 0) + 1
+    return GEM_ORDER.filter(c => counts[c]).map(c => ({ c, n: counts[c] }))
+  }
+  $: groupedCost = groupCost(card.cost)
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -63,7 +71,9 @@
             <span class="card-evo">▸ {card.evolve_into}</span>
             {#if card.evolve?.length}
               <span class="card-evo-cost">
-                {#each card.evolve as g}<img src={BALL[g]} alt={g} width="24" height="24" draggable="false">{/each}
+                {#each groupCost(card.evolve) as g}
+                  <span class="cv-u cv-u-sm" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-sm">{g.n}</span><img class="cv-mb cv-mb-sm" src={BALL[g.c]} alt={g.c} width="11" height="11" draggable="false"></span>
+                {/each}
               </span>
             {/if}
           {/if}
@@ -77,9 +87,28 @@
       <div class="card-art" on:click|stopPropagation={startJump}>
         <img src={spriteUrl(card.name)} alt={card.name} width="114" height="114" draggable="false" class:jumping>
       </div>
-      {#if card.cost.length}
+      {#if groupedCost.length}
         <div class="card-cost">
-          {#each card.cost as gem}<img src={BALL[gem]} alt={gem} width="24" height="24" draggable="false">{/each}
+          {#if groupedCost.length > 3}
+            <div class="cv cv-stack">
+              <div class="cv-row">
+                {#each groupedCost.slice(0, groupedCost.length - 3) as g}
+                  <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="13" height="13" draggable="false"></span>
+                {/each}
+              </div>
+              <div class="cv-row">
+                {#each groupedCost.slice(-3) as g}
+                  <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="13" height="13" draggable="false"></span>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <div class="cv">
+              {#each groupedCost as g}
+                <span class="cv-u" style="--gc:{COL[g.c]}"><span class="cv-n">{g.n}</span><img class="cv-mb" src={BALL[g.c]} alt={g.c} width="13" height="13" draggable="false"></span>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/if}
       <div class="card-pts" style="box-shadow:inset 0 0 0 2px {COL[color] ?? '#888'}">{card.point}</div>
@@ -124,7 +153,10 @@
   .card-names { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   .card-name { font-family: 'Silkscreen', monospace; font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card-evo  { font-family: 'Silkscreen', monospace; font-size: 12px; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-evo-cost { display: flex; gap: 2px; flex-wrap: wrap; }
+  .card-evo-cost { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .cv-u-sm { width: 20px; height: 20px; }
+  .cv-n-sm { font-size: 9px; }
+  .cv-mb-sm { width: 11px; height: 11px; }
   .card-bonus { flex: none; width: 48px; height: 48px; border-radius: 24px; display: grid; place-items: center; }
   .card-art { flex: 1; display: grid; place-items: center; min-height: 0; cursor: pointer; }
   .card-art img.jumping {
@@ -135,7 +167,18 @@
     50%  { transform: translateY(-22px); animation-timing-function: cubic-bezier(.54,.23,.77,.46); }
     100% { transform: translateY(0px); }
   }
-  .card-cost { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 60px 6px 9px; align-content: flex-end; }
+  .card-cost { display: flex; align-items: flex-end; padding: 0 60px 6px 9px; }
+
+  .cv { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .cv-stack { display: flex; flex-direction: column; gap: 3px; }
+  .cv-row { display: flex; gap: 4px; align-items: center; }
+  .cv-u {
+    position: relative; width: 26px; height: 26px; border-radius: 50%; flex: none;
+    background: #0c0d12; display: grid; place-items: center;
+    box-shadow: inset 0 0 0 2px var(--gc, #555);
+  }
+  .cv-n { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+  .cv-mb { position: absolute; right: -3px; bottom: -3px; image-rendering: pixelated; display: block; }
   .card-pts {
     position: absolute; right: 7px; bottom: 7px;
     width: 39px; height: 39px; display: grid; place-items: center;
