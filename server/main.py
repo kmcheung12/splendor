@@ -35,15 +35,15 @@ _code_to_id: dict[str, str] = {}
 @app.post("/game/new")
 async def new_game(
     num_players: int = Body(2),
-    agent_types: list[str] = Body(["random", "random"]),
+    agent_types: list[str] = Body([]),
     delay_ms: int = Body(800),
     first_player_index: int | None = Body(None),
 ):
-    assert len(agent_types) == num_players
+    slots = [SlotConfig(i, agent_types[i] if i < len(agent_types) else 'random') for i in range(num_players)]
     game_id = str(uuid.uuid4())[:8]
     config = GameConfig(
         num_players=num_players,
-        slots=[SlotConfig(i, t) for i, t in enumerate(agent_types)],
+        slots=slots,
         delay_ms=delay_ms,
         first_player_index=first_player_index,
     )
@@ -110,6 +110,16 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str):
                 if websocket is session.host_ws:
                     session.config.delay_ms = msg.get("delay_ms", session.config.delay_ms)
                     await session.broadcast(session.lobby_state())
+
+            elif mtype == "set_agent":
+                if websocket is session.host_ws:
+                    slot_idx = msg.get("slot")
+                    agent_type = msg.get("agent_type")
+                    if slot_idx is not None and agent_type and 0 <= slot_idx < len(session.slots):
+                        slot = session.slots[slot_idx]
+                        if slot.websocket is None:
+                            slot.agent_type = agent_type
+                            await session.broadcast(session.lobby_state())
 
             elif mtype == "start":
                 if websocket is session.host_ws:

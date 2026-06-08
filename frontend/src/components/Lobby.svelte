@@ -1,13 +1,49 @@
 <!-- frontend/src/components/Lobby.svelte -->
 <script lang="ts">
   import { lobbyState, mySlot, isHost } from '../lib/gameStore'
-  import { claimSlot, releaseSlot, renameSlot, startGame, setDelay } from '../lib/ws'
+  import { claimSlot, releaseSlot, renameSlot, startGame, setDelay, setAgentType } from '../lib/ws'
   import { createEventDispatcher } from 'svelte'
 
   const dispatch = createEventDispatcher<{ started: void }>()
 
   let playerName = 'Player'
   let copied = false
+
+  const DIFFICULTIES = ['beginner', 'easy', 'medium', 'hard', 'expert'] as const
+  type Difficulty = typeof DIFFICULTIES[number]
+  const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+    beginner: 'Beginner', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert',
+  }
+  const DIFFICULTY_POOLS: Record<Difficulty, string[]> = {
+    beginner:  ['random'],
+    easy:      ['random', 'bonus-engine', 'high-point'],
+    medium:    ['high-point', 'evolution-chain', 'early-capture'],
+    hard:      ['early-capture', 'denial', 'mcts'],
+    expert:    ['mcts', 'mctsrl'],
+  }
+  const AGENT_OPTIONS: { value: string; label: string }[] = [
+    { value: 'random',           label: 'Beginner' },
+    { value: 'bonus-engine',     label: 'Easy 1' },
+    { value: 'high-point',       label: 'Easy 2' },
+    { value: 'evolution-chain',  label: 'Medium 1' },
+    { value: 'early-capture',    label: 'Medium 2' },
+    { value: 'denial',           label: 'Hard 1' },
+    { value: 'mcts',             label: 'Hard 2' },
+    { value: 'mctsrl',           label: 'Expert' },
+  ]
+
+  let difficulty: Difficulty = 'medium'
+
+  function pickRandom(pool: string[]) { return pool[Math.floor(Math.random() * pool.length)] }
+
+  function applyDifficulty(d: Difficulty) {
+    difficulty = d
+    if (!$lobbyState) return
+    const pool = DIFFICULTY_POOLS[d]
+    for (const slot of $lobbyState.slots) {
+      if (slot.claimed_by === null) setAgentType(slot.index, pickRandom(pool))
+    }
+  }
 
   function handleNameInput() {
     if ($mySlot !== null) renameSlot(playerName)
@@ -25,6 +61,13 @@
   $: if ($isHost && $mySlot === null && !didAutoClaim && $lobbyState) {
     didAutoClaim = true
     claim(0)
+  }
+
+  // Apply default difficulty to all bot slots on lobby entry
+  let didApplyDifficulty = false
+  $: if ($isHost && $lobbyState && !didApplyDifficulty) {
+    didApplyDifficulty = true
+    applyDifficulty(difficulty)
   }
 
   function handleStart() {
@@ -55,18 +98,37 @@
       Your name: <input bind:value={playerName} maxlength={16} on:input={handleNameInput} />
     </label>
 
+    {#if $isHost}
+      <div class="diff-row">
+        {#each DIFFICULTIES as d}
+          <button class="diff-btn" class:selected={difficulty === d} on:click={() => applyDifficulty(d)}>
+            {DIFFICULTY_LABELS[d]}
+          </button>
+        {/each}
+      </div>
+    {/if}
+
     <div class="slots">
       {#each $lobbyState.slots as slot}
         <div class="slot" class:claimed={slot.claimed_by !== null}>
           <span class="slot-idx">Seat {slot.index + 1}</span>
-          <span class="agent">{slot.claimed_by ? '' : slot.agent_type}</span>
           {#if slot.claimed_by}
             <span class="claimer">👤 {slot.claimed_by}</span>
             {#if $mySlot === slot.index}
               <button class="release-btn" on:click={release}>Leave</button>
             {/if}
           {:else}
-            <button on:click={() => claim(slot.index)} disabled={$mySlot !== null}>Sit</button>
+            <div class="bot-row">
+              {#if $isHost}
+                <select class="agent-select" value={slot.agent_type}
+                  on:change={(e) => setAgentType(slot.index, (e.target as HTMLSelectElement).value)}>
+                  {#each AGENT_OPTIONS as opt}<option value={opt.value}>{opt.label}</option>{/each}
+                </select>
+              {:else}
+                <span class="agent">{AGENT_OPTIONS.find(o => o.value === slot.agent_type)?.label ?? 'Bot'}</span>
+              {/if}
+              <button on:click={() => claim(slot.index)}>Sit</button>
+            </div>
           {/if}
         </div>
       {/each}
@@ -106,11 +168,25 @@
   .name-row input { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 4px; color: white; padding: 4px 8px; flex: 1; }
 
   .slots { display: flex; flex-direction: column; gap: 6px; }
+  .diff-row { display: flex; gap: 4px; }
+  .diff-btn {
+    flex: 1; background: rgba(255,255,255,.07); border: 2px solid transparent;
+    border-radius: 8px; color: rgba(255,255,255,.6); cursor: pointer;
+    font-size: .7rem; padding: 7px 2px; white-space: nowrap;
+  }
+  .diff-btn:hover { background: rgba(255,255,255,.13); color: #fff; }
+  .diff-btn.selected { border-color: #e67e22; background: rgba(230,126,34,.15); color: #e67e22; }
+
   .slot { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(255,255,255,.05); border-radius: 8px; }
   .slot.claimed { background: rgba(52,199,89,.08); border: 1px solid rgba(52,199,89,.2); }
-  .slot-idx { font-weight: bold; min-width: 50px; font-size: .9rem; }
+  .slot-idx { font-weight: bold; min-width: 50px; font-size: .9rem; flex: none; }
   .agent { color: rgba(255,255,255,.4); font-size: .75rem; flex: 1; }
   .claimer { color: #2ecc71; font-size: .85rem; flex: 1; }
+  .bot-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .agent-select {
+    flex: 1; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 6px; color: #fff; padding: 4px 8px; font-size: .78rem;
+  }
 
   button { background: rgba(255,255,255,.1); color: white; border: 1px solid rgba(255,255,255,.2); border-radius: 5px; padding: 4px 10px; cursor: pointer; font-size: .85rem; }
   button:hover { background: rgba(255,255,255,.2); }
