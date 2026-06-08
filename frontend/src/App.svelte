@@ -26,10 +26,7 @@
   let gameId = ''
 
   let numPlayers = 4
-  let agentTypes = ['mcts', 'mcts', 'mctsrl', 'mctsrl']
   let delayMs = 800
-
-  const AGENT_OPTIONS = ['mcts', 'mctsrl', 'denial', 'evolution-chain', 'bonus-engine', 'high-point', 'early-capture', 'random']
 
   let error: string | null = null
 
@@ -41,7 +38,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           num_players: numPlayers,
-          agent_types: agentTypes.slice(0, numPlayers),
           delay_ms: delayMs,
         }),
       })
@@ -116,28 +112,31 @@
         <div class="error">{error}</div>
       {/if}
 
-      <section>
-        <button class="btn-tutorial" on:click={createTutorialGame}>▶ Play Tutorial</button>
+      <button class="btn-tutorial" on:click={createTutorialGame}>▶ Play Tutorial</button>
+
+      <div class="divider"></div>
+
+      <section class="create-section">
+        <div class="player-row">
+          <span class="player-row-label">Players</span>
+          <div class="player-btns">
+            {#each [2, 3, 4] as n}
+              <button class="player-btn" class:selected={numPlayers === n} on:click={() => numPlayers = n}>
+                <span class="player-icons">{#each Array(n) as _}&#9679;{/each}</span>
+                <span class="player-num">{n}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <button class="btn-create" on:click={createGame}>Create &amp; Host</button>
       </section>
 
-      <section>
-        <h2>Create Game</h2>
-        <label>Players: <input type="number" min="2" max="4" bind:value={numPlayers} /></label>
-        {#each Array(numPlayers) as _, i}
-          <label>Slot {i+1}:
-            <select bind:value={agentTypes[i]}>
-              {#each AGENT_OPTIONS as opt}<option>{opt}</option>{/each}
-            </select>
-          </label>
-        {/each}
-        <label>Delay (ms): <input type="number" min="0" max="3000" step="100" bind:value={delayMs} /></label>
-        <button on:click={createGame}>Create &amp; Host</button>
-      </section>
+      <div class="divider"></div>
 
-      <section>
-        <h2>Join Game</h2>
-        <input placeholder="Join code" bind:value={joinCode} maxlength={4} style="text-transform:uppercase" />
-        <button on:click={() => joinGame(joinCode)} disabled={!joinCode.trim()}>Join</button>
+      <section class="join-section">
+        <input class="join-input" placeholder="Join Code" bind:value={joinCode} maxlength={4} style="text-transform:uppercase" />
+        <button class="btn-join" on:click={() => joinGame(joinCode)} disabled={!joinCode.trim()}>Join Game</button>
       </section>
     </div>
 
@@ -190,26 +189,55 @@
   :global(body) { margin: 0; background: #0d0d1a; font-family: sans-serif; }
   .app { min-height: 100vh; color: white; }
   .setup {
-    max-width: 400px; margin: 60px auto; padding: 24px;
-    background: rgba(255,255,255,.07); border-radius: 12px;
-    display: flex; flex-direction: column; gap: 24px;
+    max-width: 360px; margin: 60px auto; padding: 28px 24px;
+    background: rgba(255,255,255,.07); border-radius: 14px;
+    display: flex; flex-direction: column; gap: 20px;
   }
-  h1 { text-align: center; color: #f1c40f; }
-  section { display: flex; flex-direction: column; gap: 8px; }
-  label { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .9rem; }
-  input, select { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 4px; color: white; padding: 4px 8px; }
-  button { background: #27ae60; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: .9rem; }
-  button:hover { background: #2ecc71; }
-  button:disabled { background: #555; cursor: not-allowed; }
+  h1 { text-align: center; color: #f1c40f; margin: 0 0 4px; font-size: 1.5rem; }
+  .divider { height: 1px; background: rgba(255,255,255,.1); }
   .error { background: rgba(231,76,60,.2); border: 1px solid rgba(231,76,60,.4); color: #e74c3c; border-radius: 6px; padding: 8px 12px; font-size: .85rem; }
+
   .btn-tutorial {
-    background: #2c3e8c;
-    font-size: 1rem;
-    padding: 12px 20px;
-    border-radius: 8px;
-    letter-spacing: 0.03em;
+    width: 100%; background: #2c3e8c; color: #fff; border: none; border-radius: 10px;
+    font-size: 1.05rem; padding: 14px 20px; cursor: pointer; letter-spacing: 0.03em;
   }
   .btn-tutorial:hover { background: #3a52b4; }
+
+  .create-section { display: flex; flex-direction: column; gap: 14px; }
+  .player-row { display: flex; align-items: center; gap: 12px; }
+  .player-row-label { font-size: .8rem; color: rgba(255,255,255,.55); white-space: nowrap; }
+  .player-btns { display: flex; gap: 8px; flex: 1; }
+  .player-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    background: rgba(255,255,255,.08); border: 2px solid transparent; border-radius: 10px;
+    color: #fff; cursor: pointer; padding: 10px 6px;
+  }
+  .player-btn:hover { background: rgba(255,255,255,.14); }
+  .player-btn.selected { border-color: #f1c40f; background: rgba(241,196,15,.12); }
+  .player-icons { font-size: 8px; color: rgba(255,255,255,.55); letter-spacing: 3px; line-height: 1; }
+  .player-btn.selected .player-icons { color: #f1c40f; }
+  .player-num { font-family: 'Press Start 2P', monospace; font-size: 14px; line-height: 1; }
+  .btn-create {
+    width: 100%; background: #27ae60; color: #fff; border: none; border-radius: 10px;
+    font-size: .95rem; padding: 13px; cursor: pointer;
+  }
+  .btn-create:hover { background: #2ecc71; }
+
+  .join-section { display: flex; flex-direction: column; gap: 10px; }
+  .join-input {
+    width: 100%; box-sizing: border-box;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    border-radius: 8px; color: white; padding: 12px 14px;
+    font-size: 1.1rem; letter-spacing: 0.15em; text-align: center;
+  }
+  .join-input::placeholder { color: rgba(255,255,255,.3); letter-spacing: 0.05em; font-size: .9rem; }
+  .btn-join {
+    width: 100%; background: rgba(255,255,255,.1); color: #fff;
+    border: 1px solid rgba(255,255,255,.2); border-radius: 10px;
+    font-size: .95rem; padding: 13px; cursor: pointer;
+  }
+  .btn-join:hover:not(:disabled) { background: rgba(255,255,255,.18); }
+  .btn-join:disabled { opacity: .4; cursor: not-allowed; }
   .game-layout { display: flex; flex-direction: column; gap: 8px; padding: 8px; min-height: 100vh; }
   .row-1 {
     display: grid;

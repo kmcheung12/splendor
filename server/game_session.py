@@ -45,8 +45,11 @@ class GameSession:
         slot = self.slots[slot_idx]
         if slot.websocket is not None:
             return False
+        self.release_slot(ws)  # vacate any previously held seat first
         slot.websocket = ws
         slot.claimed_by = name
+        if ws in self.spectators:
+            self.spectators.remove(ws)
         return True
 
     def rename_slot(self, ws: WebSocket, name: str) -> None:
@@ -59,6 +62,8 @@ class GameSession:
             if slot.websocket is ws:
                 slot.websocket = None
                 slot.claimed_by = None
+                if ws not in self.spectators and ws is not self.host_ws:
+                    self.spectators.append(ws)
                 return
 
     def disconnect(self, ws: WebSocket) -> None:
@@ -108,7 +113,9 @@ class GameSession:
                 {"index": s.index, "agent_type": s.agent_type, "claimed_by": s.claimed_by}
                 for s in self.slots
             ],
-            "spectators": len(self.spectators),
+            "spectators": len(self.spectators) + (
+                1 if self.host_ws and not any(s.websocket is self.host_ws for s in self.slots) else 0
+            ),
         }
 
     # ── Human action ──────────────────────────────────────────────────────────

@@ -43,6 +43,10 @@ export function setDelay(ms: number): void {
   ws?.send(JSON.stringify({ type: 'config', delay_ms: ms }))
 }
 
+export function setAgentType(slot: number, agentType: string): void {
+  ws?.send(JSON.stringify({ type: 'set_agent', slot, agent_type: agentType }))
+}
+
 function actionLabel(e: ActionEvent): string {
   switch (e.type) {
     case 'take_tokens': return `Took ${e.tokens.join(', ')}`
