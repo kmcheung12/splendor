@@ -185,18 +185,19 @@
               <div class="bcard-names">
                 <span class="bcard-name">{card.name}</span>
                 {#if card.evolve_into}
-                  <span class="bcard-evo">▸ {card.evolve_into}</span>
-                  {#if card.evolve?.length}
-                    <span class="bcard-evo-cost">
+                  <span class="bcard-evo-row">
+                    {#if card.evolve?.length}
                       {#each groupCost(card.evolve) as g}
                         <span class="cv-u cv-u-xs" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-xs">{g.n}</span><img class="cv-mb cv-mb-xs" src={BALL[g.c]} alt={g.c} width="7" height="7" draggable="false"></span>
                       {/each}
-                    </span>
-                  {/if}
+                    {/if}
+                    <span class="bcard-evo">▸ {card.evolve_into}</span>
+                  </span>
                 {/if}
               </div>
-              <span class="bcard-bonus" style="background:radial-gradient({COL[card.bonus[0]] ?? '#888'}44 0%,transparent 70%)">
-                <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="13" height="13" draggable="false">
+              <span class="bcard-bonus" style="background:{CARDBG[card.bonus[0]] ?? '#2a2a2a'}">
+                <span class="bcard-bonus-bar" style="background:{COL[card.bonus[0]] ?? '#888'}"></span>
+                <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="10" height="10" draggable="false">
               </span>
             </div>
             <div class="bcard-art"><img src={spriteUrl(card.name)} alt={card.name} width="38" height="38" draggable="false"></div>
@@ -254,18 +255,19 @@
               <div class="bcard-names">
                 <span class="bcard-name">{card.name}</span>
                 {#if card.evolve_into}
-                  <span class="bcard-evo">▸ {card.evolve_into}</span>
-                  {#if card.evolve?.length}
-                    <span class="bcard-evo-cost">
+                  <span class="bcard-evo-row">
+                    {#if card.evolve?.length}
                       {#each groupCost(card.evolve) as g}
                         <span class="cv-u cv-u-xs" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-xs">{g.n}</span><img class="cv-mb cv-mb-xs" src={BALL[g.c]} alt={g.c} width="7" height="7" draggable="false"></span>
                       {/each}
-                    </span>
-                  {/if}
+                    {/if}
+                    <span class="bcard-evo">▸ {card.evolve_into}</span>
+                  </span>
                 {/if}
               </div>
-              <span class="bcard-bonus" style="background:radial-gradient({COL[card.bonus[0]] ?? '#888'}44 0%,transparent 70%)">
-                <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="13" height="13" draggable="false">
+              <span class="bcard-bonus" style="background:{CARDBG[card.bonus[0]] ?? '#2a2a2a'}">
+                <span class="bcard-bonus-bar" style="background:{COL[card.bonus[0]] ?? '#888'}"></span>
+                <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="10" height="10" draggable="false">
               </span>
             </div>
             <div class="bcard-art"><img src={spriteUrl(card.name)} alt={card.name} width="38" height="38" draggable="false"></div>
@@ -327,18 +329,19 @@
               <div class="bcard-names">
                 <span class="bcard-name">{card.name}</span>
                 {#if card.evolve_into}
-                  <span class="bcard-evo">▸ {card.evolve_into}</span>
-                  {#if card.evolve?.length}
-                    <span class="bcard-evo-cost">
+                  <span class="bcard-evo-row">
+                    {#if card.evolve?.length}
                       {#each groupCost(card.evolve) as g}
                         <span class="cv-u cv-u-xs" style="--gc:{COL[g.c]}"><span class="cv-n cv-n-xs">{g.n}</span><img class="cv-mb cv-mb-xs" src={BALL[g.c]} alt={g.c} width="7" height="7" draggable="false"></span>
                       {/each}
-                    </span>
-                  {/if}
+                    {/if}
+                    <span class="bcard-evo">▸ {card.evolve_into}</span>
+                  </span>
                 {/if}
               </div>
-              <span class="bcard-bonus" style="background:radial-gradient({COL[card.bonus[0]] ?? '#888'}44 0%,transparent 70%)">
-                <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="13" height="13" draggable="false">
+              <span class="bcard-bonus" style="background:{CARDBG[card.bonus[0]] ?? '#2a2a2a'}">
+                <span class="bcard-bonus-bar" style="background:{COL[card.bonus[0]] ?? '#888'}"></span>
+                <img src={BALL[card.bonus[0]]} alt={card.bonus[0]} width="10" height="10" draggable="false">
               </span>
             </div>
             <div class="bcard-art"><img src={spriteUrl(card.name)} alt={card.name} width="38" height="38" draggable="false"></div>
@@ -440,17 +443,22 @@
   .bcard-names { min-width: 0; display: flex; flex-direction: column; }
   .bcard-name { font-family: 'Silkscreen', monospace; font-weight: 700; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bcard-evo { font-family: 'Silkscreen', monospace; font-size: 6px; color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bcard-evo-cost { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
+  .bcard-evo-row { display: flex; gap: 3px; align-items: center; flex-wrap: nowrap; overflow: hidden; }
   .cv-u-xs { width: 12px; height: 12px; }
   .cv-n-xs { font-size: 5px; }
   .cv-mb-xs { width: 7px; height: 7px; }
-  .bcard-bonus { flex: none; width: 18px; height: 18px; border-radius: 10px; display: grid; place-items: center; }
+  .bcard-bonus {
+    position: relative; flex: none; width: 15px; height: 19px; border-radius: 3px; overflow: hidden;
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 0 0 1px rgba(0,0,0,.55), 1px 1px 0 rgba(0,0,0,.4);
+  }
+  .bcard-bonus-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
   .bcard-art { flex: 1; display: grid; place-items: center; min-height: 0; }
   .bcard-cost { display: flex; align-items: flex-end; padding: 0 22px 3px 4px; }
 
   /* count-forward token (variant B) */
   .cv { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
-  .cv-stack { display: flex; flex-direction: column; gap: 2px; }
+  .cv-stack { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
   .cv-row { display: flex; gap: 2px; align-items: center; }
   .cv-u {
     position: relative; width: 16px; height: 16px; border-radius: 50%; flex: none;
