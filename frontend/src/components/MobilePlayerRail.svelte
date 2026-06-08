@@ -36,7 +36,7 @@
   }
 
   $: bonuses = BONUS_ORDER.reduce<Record<string, number>>((acc, c) => {
-    acc[c] = player.cards.filter(card => !card.evolved && card.bonus[0] === c).length
+    acc[c] = player.cards.reduce((n, card) => card.evolved ? n : n + card.bonus.filter(b => b === c).length, 0)
     return acc
   }, {})
 
