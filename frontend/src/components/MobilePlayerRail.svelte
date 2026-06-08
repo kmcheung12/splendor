@@ -1,7 +1,7 @@
 <!-- frontend/src/components/MobilePlayerRail.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte'
-  import { isMyTurn, humanTurnActions, phase, activePlayer } from '../lib/gameStore'
+  import { isMyTurn, phase, activePlayer, lastActions } from '../lib/gameStore'
   import { BALL } from '../lib/tokens'
   import type { PlayerState } from '../lib/types'
 
@@ -11,31 +11,21 @@
 
   const dispatch = createEventDispatcher<{ expand: void }>()
 
-  const TOKEN_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
-  const BONUS_ORDER = ['red', 'yellow', 'blue', 'pink', 'black']
+  const LANE_ORDER = ['red', 'yellow', 'blue', 'pink', 'black'] as const
+  const COL: Record<string, string> = {
+    red: '#ff3434', yellow: '#f1c40f', blue: '#3498db',
+    pink: '#ffa3da', black: '#9aa0a6', master: '#a569bd',
+  }
+  const CARDBG: Record<string, string> = {
+    red: '#6b2a2a', yellow: '#5c5020', blue: '#1e3d5c',
+    pink: '#a04f78', black: '#2a2a2a',
+  }
   const TIER_BAR: Record<string, string> = {
     common: '#b08d57', uncommon: '#c7ccd1', rare: '#e8b923',
     epic: '#a55fd0', legendary: 'linear-gradient(90deg,#3aa0e0,#f0852e)',
   }
-  const DEX: Record<string, number> = {
-    abra:63, aerodactyl:142, alakazam:65, articuno:144, beedrill:15,
-    bellsprout:69, blastoise:9, bulbasaur:1, butterfree:12, caterpie:10,
-    charizard:6, charmander:4, charmeleon:5, ditto:132, dragonair:148,
-    dragonite:149, dratini:147, eevee:133, gastly:92, gengar:94,
-    geodude:74, gloom:44, golem:76, graveler:75, haunter:93,
-    ivysaur:2, kadabra:64, kakuna:14, lapras:131, machamp:68,
-    machoke:67, machop:66, metapod:11, mew:151, mewtwo:150,
-    moltres:146, nidoqueen:31, nidoran:29, nidorina:30, oddish:43,
-    pidgeot:18, pidgeotto:17, pidgey:16, poliwag:60, poliwhirl:61,
-    poliwrath:62, snorlax:143, squirtle:7, venusaur:3, victreebel:71,
-    vileplume:45, wartortle:8, weedle:13, weepinbell:70, zapdos:145,
-  }
-  function spriteUrl(name: string): string {
-    const id = DEX[name.toLowerCase()]
-    return id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : ''
-  }
 
-  $: bonuses = BONUS_ORDER.reduce<Record<string, number>>((acc, c) => {
+  $: bonuses = LANE_ORDER.reduce<Record<string, number>>((acc, c) => {
     acc[c] = player.cards.reduce((n, card) => card.evolved ? n : n + card.bonus.filter(b => b === c).length, 0)
     return acc
   }, {})
@@ -44,6 +34,7 @@
   $: avatarNum = (player.name.match(/\d+/) ?? ['?'])[0]
   $: needsAction = isOwnPlayer && $isMyTurn && isActive &&
     ($phase === 'discard' || $phase === 'evolve')
+  $: lastAction = $lastActions[player.name] ?? ''
 </script>
 
 <button class="railbtn" on:click={() => dispatch('expand')}>
@@ -52,28 +43,39 @@
       <div class="avatar" class:avatar-on={isActive}>{avatarNum}</div>
       <div class="meta">
         <span class="pname">{displayName}{#if isActive}<em class="turn">● TURN</em>{/if}</span>
+        {#if lastAction}<span class="plast">{lastAction}</span>{/if}
       </div>
       <div class="lcd">{player.points}</div>
     </div>
 
-    <div class="field-label">Pokéballs</div>
-    <div class="tmini">
-      {#each TOKEN_ORDER as t}
-        {@const n = player.tokens[t] ?? 0}
-        <span class="tm" class:tz={n === 0}>
-          <img src={BALL[t]} alt={t} width="13" height="13" draggable="false">
-          <i>{n}</i>
-        </span>
+    <div class="field-label">Bonus <span class="fl">/</span> Pokéball</div>
+    <div class="cstacks">
+      {#each LANE_ORDER as c}
+        {@const bn = bonuses[c] ?? 0}
+        {@const tn = player.tokens[c] ?? 0}
+        <div class="cstack">
+          <div class="cs-card" class:csz={bn === 0} style="background:{CARDBG[c]}">
+            <span class="cs-bar" style="background:{COL[c]}"></span>
+            <span class="cs-bn">{bn}</span>
+          </div>
+          <div class="cs-gem" class:csz={tn === 0} style="--gc:{COL[c]}">
+            <span class="cs-n">{tn}</span>
+            <img class="cs-mb" src={BALL[c]} alt={c} width="9" height="9" draggable="false">
+          </div>
+        </div>
       {/each}
-    </div>
-    <div class="field-label">Bonus</div>
-    <div class="bmini">
-      {#each BONUS_ORDER as c}
-        {@const n = bonuses[c] ?? 0}
-        <span class="tm" class:tz={n === 0}>
-          <img src={BALL[c]} alt={c} width="13" height="13" draggable="false">
-          <i>{n}</i>
-        </span>
+      <!-- Master (wild) — always shown, no bonus card -->
+      {#each [player.tokens['master'] ?? 0] as masterN}
+      <div class="cstack">
+        <div class="cs-card wild" style="background:#3a2f0e">
+          <span class="cs-bar" style="background:{COL.master}"></span>
+          <span class="cs-star">✦</span>
+        </div>
+        <div class="cs-gem" class:csz={masterN === 0} style="--gc:{COL.master}">
+          <span class="cs-n">{masterN}</span>
+          <img class="cs-mb" src={BALL['master']} alt="master" width="9" height="9" draggable="false">
+        </div>
+      </div>
       {/each}
     </div>
 
@@ -83,7 +85,6 @@
         {#each player.reserved_cards as card}
           <span class="rm">
             <span class="rm-bar" style="background:{TIER_BAR[card.tier] ?? '#888'}"></span>
-            <img src={spriteUrl(card.name)} alt={card.name} width="16" height="16" draggable="false">
             <span class="rm-name">{card.name}</span>
             <span class="rm-pts">{card.point}</span>
           </span>
@@ -105,11 +106,11 @@
     width: 100%;
   }
   .prail {
-    flex: 1; min-height: 0; padding: 8px;
+    flex: 1; min-height: 0; padding: 6px;
     background: linear-gradient(180deg, #23252e, #16171d);
     border: 2px solid #0c0d12; border-radius: 8px;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 3px 3px 0 rgba(0,0,0,.35);
-    overflow: hidden; display: flex; flex-direction: column; gap: 5px;
+    overflow: hidden; display: flex; flex-direction: column; gap: 4px;
     transition: transform .12s ease, filter .12s ease;
   }
   .railbtn:hover .prail { filter: brightness(1.12); }
@@ -117,56 +118,75 @@
   .prail.active {
     box-shadow: inset 0 0 0 2px rgba(255,210,63,.5), 0 0 0 2px rgba(255,210,63,.5), 3px 3px 0 rgba(0,0,0,.35);
   }
-  .prail-head { display: flex; align-items: center; gap: 6px; }
+  .prail-head { display: flex; align-items: center; gap: 5px; }
 
   .avatar {
-    width: 24px; height: 24px; flex: none; border-radius: 5px;
+    width: 22px; height: 22px; flex: none; border-radius: 4px;
     display: grid; place-items: center;
-    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
     color: #0c0d12; background: #6b7280;
     box-shadow: 2px 2px 0 rgba(0,0,0,.4);
   }
   .avatar.avatar-on { background: #ffd23f; }
   .lcd {
-    flex: none; min-width: 26px; height: 26px; padding: 0 4px;
-    display: grid; place-items: center; border-radius: 5px;
-    font-family: 'Press Start 2P', monospace; font-size: 12px; color: #fff;
+    flex: none; min-width: 24px; height: 24px; padding: 0 3px;
+    display: grid; place-items: center; border-radius: 4px;
+    font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fff;
     background: #0c0d12; box-shadow: inset 0 0 0 2px #ffd23f, 2px 2px 0 rgba(0,0,0,.4);
   }
   .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  .pname { font-family: 'Silkscreen', monospace; font-size: 10px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  em.turn { color: #ffd23f; font-style: normal; font-size: 7px; margin-left: 4px; }
-  .field-label { font-family: 'Silkscreen', monospace; font-size: 7px; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.5); }
+  .pname { font-family: 'Silkscreen', monospace; font-size: 9px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  em.turn { color: #ffd23f; font-style: normal; font-size: 6px; margin-left: 3px; }
+  .plast { font-size: 7px; color: rgba(255,255,255,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .field-label { font-family: 'Silkscreen', monospace; font-size: 6px; letter-spacing: .7px; text-transform: uppercase; color: rgba(255,255,255,.5); }
+  .fl { color: rgba(255,255,255,.28); margin: 0 1px; }
 
-  .tmini { display: flex; flex-wrap: wrap; gap: 3px 7px; }
-  .bmini { display: flex; flex-wrap: wrap; gap: 3px 7px; }
-  .tmini img { image-rendering: pixelated; display: block; }
-  .tm { display: inline-flex; align-items: center; gap: 2px; }
-  .tm i { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #fff; font-style: normal; }
-  .tz { opacity: .28; }
+  /* ── Color stacks: card (bonus) over gem (pokéball) ── */
+  .cstacks { display: flex; gap: 2px; align-items: flex-end; }
+  .cstack { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 
-  .rmini { display: flex; flex-direction: column; gap: 4px; }
+  .cs-card {
+    position: relative; width: 100%; aspect-ratio: 1;
+    border-radius: 2px; display: grid; place-items: center; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 1px 1px 0 rgba(0,0,0,.45);
+  }
+  .cs-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .cs-bn { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.65); }
+  .cs-card.csz { opacity: .26; }
+  .cs-card.wild { display: grid; place-items: center; }
+  .cs-star { font-size: 9px; color: #f4d23a; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+
+  .cs-gem {
+    position: relative; width: 100%; aspect-ratio: 1; border-radius: 50%;
+    background: #0c0d12; display: grid; place-items: center;
+    box-shadow: inset 0 0 0 2px var(--gc, #555), 1px 1px 0 rgba(0,0,0,.45);
+  }
+  .cs-n { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+  .cs-mb { position: absolute; right: -2px; bottom: -2px; image-rendering: pixelated; display: block; }
+  .cs-gem.csz { opacity: .24; }
+
+  /* ── Reserved ── */
+  .rmini { display: flex; flex-direction: column; gap: 3px; }
   .rm {
     display: inline-flex; align-items: center; gap: 3px;
     background: rgba(255,255,255,.06); border-radius: 4px;
-    padding: 3px 5px 3px 0; overflow: hidden;
+    padding: 2px 4px 2px 0; overflow: hidden;
   }
-  .rm img { image-rendering: pixelated; display: block; }
   .rm-bar { width: 2px; align-self: stretch; flex: none; }
-  .rm-name { font-family: 'Silkscreen', monospace; font-size: 8px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
-  .rm-pts { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #fff; background: #0c0d12; border-radius: 3px; padding: 2px 3px; flex: none; }
+  .rm-name { font-family: 'Silkscreen', monospace; font-size: 7px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  .rm-pts { font-family: 'Press Start 2P', monospace; font-size: 7px; color: #fff; background: #0c0d12; border-radius: 3px; padding: 2px 3px; flex: none; }
 
   .expand-cue {
-    position: absolute; top: 6px; right: 8px;
-    font-size: 12px; color: rgba(255,255,255,.45); pointer-events: none; line-height: 1;
+    position: absolute; top: 5px; right: 6px;
+    font-size: 11px; color: rgba(255,255,255,.45); pointer-events: none; line-height: 1;
   }
   .railbtn:hover .expand-cue { color: #ffd23f; }
 
   .action-badge {
     position: absolute; top: 4px; left: 4px;
-    width: 16px; height: 16px; border-radius: 50%;
+    width: 14px; height: 14px; border-radius: 50%;
     background: #e74c3c; color: #fff;
-    font-family: 'Press Start 2P', monospace; font-size: 8px;
+    font-family: 'Press Start 2P', monospace; font-size: 7px;
     display: grid; place-items: center; pointer-events: none;
     animation: badge-pulse 1s ease-in-out infinite;
   }

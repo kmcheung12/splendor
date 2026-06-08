@@ -107,11 +107,6 @@
     {/each}
   </div>
 
-  <!-- Hint pill (when no modal is open) -->
-  {#if !expandedPlayerName}
-    <div class="hint">Tap a player to open their hand</div>
-  {/if}
-
   <!-- Expanded hand modal -->
   {#if expandedPlayer}
     <PlayerHandModal
@@ -148,13 +143,4 @@
     position: absolute; top: 50%; left: 50%;
   }
 
-  .hint {
-    position: absolute; bottom: 9px; left: 50%;
-    transform: translateX(-50%); z-index: 40;
-    font-family: 'Silkscreen', monospace;
-    font-size: 9px; color: rgba(255,255,255,.55);
-    background: rgba(0,0,0,.45); padding: 4px 12px;
-    border-radius: 20px; pointer-events: none;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
-  }
 </style>
