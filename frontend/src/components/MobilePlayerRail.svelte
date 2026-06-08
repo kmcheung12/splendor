@@ -84,7 +84,7 @@
       <div class="rmini">
         {#each player.reserved_cards as card}
           <span class="rm">
-            <span class="rm-bar" style="background:{TIER_BAR[card.tier] ?? '#888'}"></span>
+            <span class="rm-bar" style="background:{COL[card.bonus[0]] ?? '#888'}"></span>
             <span class="rm-name">{card.name}</span>
             <span class="rm-pts">{card.point}</span>
           </span>
