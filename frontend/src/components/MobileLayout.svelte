@@ -135,7 +135,7 @@
   }
 
   .railcol {
-    width: 150px; flex: none;
+    width: 110px; flex: none;
     display: flex; flex-direction: column;
     gap: 8px; min-height: 0;
   }
