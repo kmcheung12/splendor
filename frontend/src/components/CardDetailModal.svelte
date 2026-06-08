@@ -170,7 +170,7 @@
   .card-cost { display: flex; align-items: flex-end; padding: 0 60px 6px 9px; }
 
   .cv { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-  .cv-stack { display: flex; flex-direction: column; gap: 3px; }
+  .cv-stack { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
   .cv-row { display: flex; gap: 4px; align-items: center; }
   .cv-u {
     position: relative; width: 26px; height: 26px; border-radius: 50%; flex: none;
