@@ -6,7 +6,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "training_log_sample.txt"
 
 def test_parse_single_batch():
     batches = parse_training_log(FIXTURE)
-    assert len(batches) == 1
+    assert len(batches) >= 1
     b = batches[0]
     assert b.id == "v1"
     assert b.stage == 1
@@ -23,3 +23,14 @@ def test_parse_single_batch():
     assert bench.win_rates == [0.0, 0.0, 0.415, 0.585]
     assert bench.games == 200
     assert "agent has not yet learned" in b.narrative
+
+
+def test_parse_multiple_batches():
+    batches = parse_training_log(FIXTURE)
+    assert [b.id for b in batches] == ["v1", "v3"]
+    assert batches[1].stage == 3
+    assert batches[1].opponents == ["denial", "high-point"]
+    assert batches[1].lr == 0.0001
+    assert len(batches[1].benchmarks) == 2
+    assert batches[1].benchmarks[1].opponents == ["v3-256x3.zip", "high-point"]
+    assert batches[1].benchmarks[1].win_rates == [0.56, 0.44]
