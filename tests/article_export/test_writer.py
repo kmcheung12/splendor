@@ -36,3 +36,28 @@ def test_write_run_outputs():
         assert [b["id"] for b in summary["batches"]] == ["v1", "v2"]
         curves = json.loads((out / "curves.json").read_text())
         assert curves["batches"][1]["explained_variance"] == 0.2
+
+
+from scripts.article_export.writer import write_run_index
+
+
+def test_write_run_index_merges_existing():
+    with tempfile.TemporaryDirectory() as tmp:
+        runs_dir = Path(tmp)
+        write_run_index(runs_dir, run_id="r1", title="One", set_default=True)
+        write_run_index(runs_dir, run_id="r2", title="Two", set_default=False)
+        index = json.loads((runs_dir / "index.json").read_text())
+        ids = [r["id"] for r in index["runs"]]
+        assert ids == ["r1", "r2"]
+        assert index["runs"][0]["default"] is True
+        assert index["runs"][1]["default"] is False
+
+
+def test_write_run_index_set_default_unsets_others():
+    with tempfile.TemporaryDirectory() as tmp:
+        runs_dir = Path(tmp)
+        write_run_index(runs_dir, run_id="r1", title="One", set_default=True)
+        write_run_index(runs_dir, run_id="r2", title="Two", set_default=True)
+        index = json.loads((runs_dir / "index.json").read_text())
+        assert index["runs"][0]["default"] is False
+        assert index["runs"][1]["default"] is True
