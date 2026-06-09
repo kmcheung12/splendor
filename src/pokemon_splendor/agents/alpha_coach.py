@@ -176,9 +176,9 @@ def evaluate_candidate(
     n_games: int,
     n_simulations: int,
     depth: int,
+    hidden_size: int,
+    num_layers: int,
     n_workers: int = 1,
-    hidden_size: int = 256,
-    num_layers: int = 3,
 ) -> float:
     """Returns candidate's average outcome over n_games against best."""
     candidate_state = {k: v.cpu() for k, v in candidate.state_dict().items()}
@@ -285,9 +285,9 @@ class AlphaCoach:
                     candidate, best_network,
                     self._jsonl_path, self._num_players,
                     self._eval_games, self._n_simulations, self._depth,
-                    self._n_workers,
                     hidden_size=self._hidden_size,
                     num_layers=self._num_layers,
+                    n_workers=self._n_workers,
                 )
                 accepted = avg_outcome >= self._accept_threshold
                 print(f"  eval avg_outcome={avg_outcome:.3f} threshold={self._accept_threshold} → {'ACCEPTED' if accepted else 'rejected'}")
