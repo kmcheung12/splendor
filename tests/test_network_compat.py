@@ -18,7 +18,7 @@ def test_custom_hidden_size():
     net = AlphaNet(hidden_size=512, num_layers=2)
     linear_layers = [m for m in net.shared if isinstance(m, torch.nn.Linear)]
     assert len(linear_layers) == 2
-    assert all(l.out_features == 512 for l in linear_layers)
+    assert all(layer.out_features == 512 for layer in linear_layers)
 
 
 def test_forward_shape_default():
@@ -28,6 +28,8 @@ def test_forward_shape_default():
     policy, value = net(obs, mask)
     assert policy.shape == (TOTAL_ACTIONS,)
     assert value.shape == ()
+    assert abs(policy.sum().item() - 1.0) < 1e-5
+    assert 0.0 <= value.item() <= 1.0
 
 
 def test_forward_shape_custom():
@@ -37,6 +39,8 @@ def test_forward_shape_custom():
     policy, value = net(obs, mask)
     assert policy.shape == (TOTAL_ACTIONS,)
     assert value.shape == ()
+    assert abs(policy.sum().item() - 1.0) < 1e-5
+    assert 0.0 <= value.item() <= 1.0
 
 
 def test_save_embeds_architecture():
