@@ -10,16 +10,11 @@
   import { BALL } from '../lib/tokens'
   import { flyArc, ARC_DURATION } from '../lib/arcAnimation'
 
-  const TOKEN_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
+  import { TOKEN_ORDER, TIER_ABS_OFFSET } from '../lib/gameData'
 
   const TIER_BALL: Record<string, string> = {
     common: BALL['red'], uncommon: BALL['blue'], rare: BALL['yellow'],
     epic: BALL['black'], legendary: BALL['master'],
-  }
-
-  // slot in catch_card is absolute (common 0-3, uncommon 4-7, rare 8-11, epic 12, legendary 13)
-  const TIER_ABS_OFFSET: Record<string, number> = {
-    common: 0, uncommon: 4, rare: 8, epic: 12, legendary: 13,
   }
 
   function findCardOnBoard(tier: string, absSlot: number): HTMLElement | null {
@@ -98,10 +93,7 @@
       tokenSelectMode.set(false)
       return
     }
-    const tierOffsets: Record<string, number> = {
-      common: 0, uncommon: 4, rare: 8, epic: 12, legendary: 13,
-    }
-    const absSlot = (tierOffsets[tier] ?? 0) + slotIdx
+    const absSlot = (TIER_ABS_OFFSET[tier] ?? 0) + slotIdx
     const valid = $humanTurnActions
     const candidates = absSlot < 12
       ? [30 + absSlot, 47 + absSlot, 59 + absSlot]
@@ -177,10 +169,7 @@
   }
 
   function slotHasValidAction(slotIdx: number, tier: string): boolean {
-    const tierOffsets: Record<string, number> = {
-      common: 0, uncommon: 4, rare: 8, epic: 12, legendary: 13,
-    }
-    const absSlot = (tierOffsets[tier] ?? 0) + slotIdx
+    const absSlot = (TIER_ABS_OFFSET[tier] ?? 0) + slotIdx
     const valid = $humanTurnActions
     const candidates = absSlot < 12 ? [30 + absSlot, 47 + absSlot, 59 + absSlot] : [30 + absSlot]
     return candidates.some(a => valid.includes(a))

@@ -11,22 +11,7 @@
   import { BALL } from '../lib/tokens'
   import { sendAction } from '../lib/ws'
 
-  const TOKEN_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
-  const COL: Record<string, string> = {
-    red: '#ff3434', yellow: '#f1c40f', blue: '#3498db',
-    pink: '#ffa3da', black: '#9aa0a6', master: '#a569bd',
-  }
-  const TIER_DECK_GRAD: Record<string, string> = {
-    common:    'linear-gradient(135deg,#8B6914,#c9a64a)',
-    uncommon:  'linear-gradient(135deg,#7f8c8d,#bdc3c7)',
-    rare:      'linear-gradient(135deg,#c8a415,#f5d60a)',
-    epic:      'linear-gradient(135deg,#6c3483,#a569bd)',
-    legendary: 'linear-gradient(135deg,#154360,#2e86c1,#e74c3c,#f39c12)',
-  }
-
-  const TIER_ABS_OFFSET: Record<string, number> = {
-    common: 0, uncommon: 4, rare: 8, epic: 12, legendary: 13,
-  }
+  import { COL, TOKEN_ORDER, TIER_ABS_OFFSET, TIER_DECK_GRAD } from '../lib/gameData'
 
   $: board = $gameState?.board
   $: boardTokens = $gameState?.board_tokens ?? {}
