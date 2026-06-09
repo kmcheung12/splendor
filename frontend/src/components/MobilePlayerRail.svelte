@@ -4,6 +4,7 @@
   import { isMyTurn, phase, activePlayer, lastActions } from '../lib/gameStore'
   import { BALL } from '../lib/tokens'
   import type { PlayerState } from '../lib/types'
+  import ReservedCard from './ReservedCard.svelte'
 
   export let player: PlayerState
   export let displayName: string
@@ -23,13 +24,6 @@
   const TIER_BAR: Record<string, string> = {
     common: '#b08d57', uncommon: '#c7ccd1', rare: '#e8b923',
     epic: '#a55fd0', legendary: 'linear-gradient(90deg,#3aa0e0,#f0852e)',
-  }
-
-  const GEM_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
-  function groupCost(gems: string[]): { c: string; n: number }[] {
-    const counts: Record<string, number> = {}
-    for (const g of gems) counts[g] = (counts[g] ?? 0) + 1
-    return GEM_ORDER.filter(c => counts[c]).map(c => ({ c, n: counts[c] }))
   }
 
   $: bonuses = LANE_ORDER.reduce<Record<string, number>>((acc, c) => {
@@ -90,21 +84,7 @@
       <div class="field-label">Reserved</div>
       <div class="rmini">
         {#each player.reserved_cards as card}
-          <span class="rm">
-            <span class="rm-bar" style="background:{COL[card.bonus[0]] ?? '#888'}"></span>
-            <span class="rm-name">{card.name}</span>
-            {#if card.cost?.length}
-              <span class="rm-cost">
-                {#each groupCost(card.cost) as g}
-                  <span class="rm-cv" style="--gc:{COL[g.c]}">
-                    <span class="rm-cv-n">{g.n}</span>
-                    <img class="rm-cv-mb" src={BALL[g.c]} alt={g.c} draggable="false">
-                  </span>
-                {/each}
-              </span>
-            {/if}
-            <span class="rm-pts">{card.point}</span>
-          </span>
+          <ReservedCard {card} size="sm" />
         {/each}
       </div>
     {/if}
@@ -184,23 +164,6 @@
 
   /* ── Reserved ── */
   .rmini { display: flex; flex-direction: column; gap: 3px; }
-  .rm {
-    display: inline-flex; align-items: center; gap: 3px;
-    background: rgba(255,255,255,.06); border-radius: 4px;
-    padding: 2px 4px 2px 0; overflow: hidden;
-  }
-  .rm-bar { width: 2px; align-self: stretch; flex: none; }
-  .rm-name { font-family: 'Silkscreen', monospace; font-size: 7px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
-  .rm-pts { font-family: 'Press Start 2P', monospace; font-size: 7px; color: #fff; background: #0c0d12; border-radius: 3px; padding: 2px 3px; flex: none; }
-
-  .rm-cost { display: flex; gap: 2px; align-items: center; flex: none; }
-  .rm-cv {
-    position: relative; width: 12px; height: 12px; border-radius: 50%; flex: none;
-    background: #0c0d12; display: grid; place-items: center;
-    box-shadow: inset 0 0 0 1.5px var(--gc, #555);
-  }
-  .rm-cv-n { font-family: 'Press Start 2P', monospace; font-size: 5px; color: #fff; }
-  .rm-cv-mb { position: absolute; right: -2px; bottom: -2px; width: 6px; height: 6px; image-rendering: pixelated; display: block; }
 
   .expand-cue {
     position: absolute; top: 5px; right: 6px;
