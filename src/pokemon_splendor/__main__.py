@@ -61,6 +61,14 @@ def main():
                         help="Alpha training: .pt checkpoint to resume from")
     parser.add_argument("--alpha-start-iter", type=int, default=1,
                         help="Alpha training: iteration number to resume from (default 1)")
+    parser.add_argument("--hidden-size", type=int, default=256,
+                        help="PPO hidden layer width (default 256; ignored on --resume)")
+    parser.add_argument("--hidden-layers", type=int, default=3,
+                        help="PPO hidden layer count (default 3; ignored on --resume)")
+    parser.add_argument("--alpha-hidden-size", type=int, default=256,
+                        help="AlphaNet hidden layer width (default 256)")
+    parser.add_argument("--alpha-hidden-layers", type=int, default=3,
+                        help="AlphaNet hidden layer count (default 3)")
     parser.add_argument("--workers", type=int, default=1,
                         help="Number of parallel workers for train/alpha-train (default 1)")
     parser.add_argument("--render", action="store_true")
@@ -77,7 +85,7 @@ def main():
         run_data_repl(jsonl)
     elif args.mode == "train":
         opponent_types = [a.strip() for a in args.opponents.split(",")]
-        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers)
+        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers, args.hidden_size, args.hidden_layers)
     elif args.mode == "benchmark":
         _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent, args.workers)
     elif args.mode == "alpha-train":
@@ -86,6 +94,7 @@ def main():
             args.alpha_sims, args.alpha_depth,
             len(agent_types), args.alpha_checkpoint_dir,
             args.alpha_resume, args.alpha_start_iter, args.workers,
+            args.alpha_hidden_size, args.alpha_hidden_layers,
         )
     else:
         _run_game(jsonl, agent_types, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent)
@@ -275,7 +284,9 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
                opponent_types: list[str] | None = None,
                resume_path: str | None = None,
                learning_rate: float = 0.0001,
-               n_workers: int = 1):
+               n_workers: int = 1,
+               hidden_size: int = 256,
+               hidden_layers: int = 3):
     from sb3_contrib import MaskablePPO
     from sb3_contrib.common.wrappers import ActionMasker
     from pokemon_splendor.agents.rl import SingleAgentEnv
@@ -304,10 +315,11 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
                                  custom_objects={"learning_rate": learning_rate})
         print(f"Resuming from {resume_path} (lr={learning_rate})")
     else:
+        layers = [hidden_size] * hidden_layers
         model = MaskablePPO("MlpPolicy", env, verbose=1,
                             learning_rate=learning_rate,
                             vf_coef=0.5,
-                            policy_kwargs={"net_arch": dict(pi=[128, 128], vf=[128, 128])})
+                            policy_kwargs={"net_arch": dict(pi=layers, vf=layers)})
 
     model.learn(total_timesteps=episodes)
     model.save(save_path)
@@ -318,6 +330,7 @@ def _run_alpha_train(
     jsonl: Path, n_iterations: int, games_per_iteration: int,
     n_simulations: int, depth: int, num_players: int, checkpoint_dir: str,
     resume_from: str | None = None, start_iteration: int = 1, n_workers: int = 1,
+    hidden_size: int = 256, num_layers: int = 3,
 ):
     from pokemon_splendor.agents.alpha_coach import AlphaCoach
     coach = AlphaCoach(
@@ -331,6 +344,8 @@ def _run_alpha_train(
         resume_from=resume_from,
         start_iteration=start_iteration,
         n_workers=n_workers,
+        hidden_size=hidden_size,
+        num_layers=num_layers,
     )
     coach.run()
 

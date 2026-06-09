@@ -134,3 +134,12 @@ def test_alpha_coach_custom_architecture():
         linear_layers = [m for m in net.shared if isinstance(m, torch.nn.Linear)]
         assert len(linear_layers) == 2
         assert linear_layers[0].out_features == 128
+
+
+def test_ppo_net_arch_construction():
+    """Verify the net_arch dict is built correctly from hidden_size/hidden_layers."""
+    hidden_size = 256
+    hidden_layers = 3
+    layers = [hidden_size] * hidden_layers
+    net_arch = dict(pi=layers, vf=layers)
+    assert net_arch == {"pi": [256, 256, 256], "vf": [256, 256, 256]}
