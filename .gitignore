@@ -12,3 +12,6 @@ wheels/
 # frontend
 node_modules/
 .vite/
+
+# generated ONNX artifacts (large binaries)
+frontend/article/data/runs/**/network.onnx

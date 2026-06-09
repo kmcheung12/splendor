@@ -13,6 +13,10 @@ dependencies = [
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.29.0",
     "websockets>=12.0",
+    "pyyaml>=6.0",
+    "onnx>=1.16",
+    "onnxruntime>=1.17",
+    "onnxscript>=0.7.0",
 ]
 
 [project.scripts]
