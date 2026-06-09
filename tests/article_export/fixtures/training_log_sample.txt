@@ -1,0 +1,16 @@
+
+=== 2026-06-09 21:25:42 ===
+Command: uv run pokemon-splendor --mode train --opponents random --episodes 200000 --save models/v1-256x3.zip --workers 4
+Stage: 1 — random opponent, 200k steps
+Result:
+  total_timesteps:   200704
+  explained_variance: -0.122
+  entropy_loss:      -1.81
+  value_loss:        0.0431
+  clip_fraction:     0.301
+
+Benchmark: uv run pokemon-splendor --mode benchmark --games 200 --players models/v1-256x3.zip,random,early-capture,denial --workers 4
+Result:
+  models/v1-256x3.zip: 0.0%  random: 0.0%  early-capture: 41.5%  denial: 58.5%
+
+Assessment: Pure random opponent. The agent has not yet learned to buy anything.
