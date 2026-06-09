@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "dev:article": "vite --config vite.article.config.ts",
+    "build:article": "vite build --config vite.article.config.ts",
+    "test:article": "vitest --config vite.article.config.ts --run"
   },
   "dependencies": {
     "svelte": "^5.0.0"
