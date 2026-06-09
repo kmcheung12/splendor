@@ -258,6 +258,8 @@ class AlphaCoach:
             print(f"Resumed from {self._resume_from}")
         else:
             best_network = AlphaNet(hidden_size=self._hidden_size, num_layers=self._num_layers)
+        hidden_size = best_network._hidden_size
+        num_layers = best_network._num_layers
         best_network.eval()
         replay_buffer: deque[SelfPlayRecord] = deque(maxlen=self._buffer_size)
 
@@ -285,8 +287,8 @@ class AlphaCoach:
                     candidate, best_network,
                     self._jsonl_path, self._num_players,
                     self._eval_games, self._n_simulations, self._depth,
-                    hidden_size=self._hidden_size,
-                    num_layers=self._num_layers,
+                    hidden_size=hidden_size,
+                    num_layers=num_layers,
                     n_workers=self._n_workers,
                 )
                 accepted = avg_outcome >= self._accept_threshold
