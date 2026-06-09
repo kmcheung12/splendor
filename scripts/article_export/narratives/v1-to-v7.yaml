@@ -1,0 +1,13 @@
+v1: |
+  The first version played against a completely random opponent.
+  It had no idea how Splendor worked — its only signal was "did I win?".
+  After 200,000 games it still hadn't learned to buy anything.
+v3: |
+  Mixing denial and high-point as opponents broke a plateau the agent
+  had been stuck on. Two adversarial strategies forced the agent to
+  develop a more general policy.
+v6: |
+  Training against three opponents (denial + two earlier self-play
+  versions) restored the agent's generalisation after v5 had
+  over-specialised. v6 was the first version to beat denial in
+  four-player play.
