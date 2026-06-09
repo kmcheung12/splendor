@@ -12,19 +12,7 @@
 
   const dispatch = createEventDispatcher<{ expand: void }>()
 
-  const LANE_ORDER = ['red', 'yellow', 'blue', 'pink', 'black'] as const
-  const COL: Record<string, string> = {
-    red: '#ff3434', yellow: '#f1c40f', blue: '#3498db',
-    pink: '#ffa3da', black: '#9aa0a6', master: '#a569bd',
-  }
-  const CARDBG: Record<string, string> = {
-    red: '#6b2a2a', yellow: '#5c5020', blue: '#1e3d5c',
-    pink: '#a04f78', black: '#2a2a2a',
-  }
-  const TIER_BAR: Record<string, string> = {
-    common: '#b08d57', uncommon: '#c7ccd1', rare: '#e8b923',
-    epic: '#a55fd0', legendary: 'linear-gradient(90deg,#3aa0e0,#f0852e)',
-  }
+  import { COL, CARDBG, TIER_BAR, LANE_ORDER } from '../lib/gameData'
 
   $: bonuses = LANE_ORDER.reduce<Record<string, number>>((acc, c) => {
     acc[c] = player.cards.reduce((n, card) => card.evolved ? n : n + card.bonus.filter(b => b === c).length, 0)

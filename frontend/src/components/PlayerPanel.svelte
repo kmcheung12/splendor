@@ -10,8 +10,7 @@
   export let position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' = 'bottom-left'
   export let displayName: string = player.name
 
-  const LANE_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
-  const TOKEN_ORDER = ['red', 'yellow', 'blue', 'pink', 'black', 'master']
+  import { TIER_BAR, TOKEN_ORDER, LANE_ORDER, DISCARD_ACTION, spriteUrl, groupCost } from '../lib/gameData'
 
   const GEMS: Record<string, { accent: string; bg: string }> = {
     red:    { accent: '#ff3434', bg: '#6b2a2a' },
@@ -22,46 +21,8 @@
     master: { accent: '#f39c12', bg: '#6e5212' },
   }
 
-  const TIER_BAR: Record<string, string> = {
-    common: '#b08d57', uncommon: '#c7ccd1', rare: '#e8b923',
-    epic: '#a55fd0', legendary: 'linear-gradient(90deg,#3aa0e0,#f0852e)',
-  }
-
-  const DEX: Record<string, number> = {
-    abra:63, aerodactyl:142, alakazam:65, articuno:144, beedrill:15,
-    bellsprout:69, blastoise:9, bulbasaur:1, butterfree:12, caterpie:10,
-    charizard:6, charmander:4, charmeleon:5, ditto:132, dragonair:148,
-    dragonite:149, dratini:147, eevee:133, gastly:92, gengar:94,
-    geodude:74, gloom:44, golem:76, graveler:75, haunter:93,
-    ivysaur:2, kadabra:64, kakuna:14, lapras:131, machamp:68,
-    machoke:67, machop:66, metapod:11, mew:151, mewtwo:150,
-    moltres:146, nidoqueen:31, nidoran:29, nidorina:30, oddish:43,
-    pidgeot:18, pidgeotto:17, pidgey:16, poliwag:60, poliwhirl:61,
-    poliwrath:62, snorlax:143, squirtle:7, venusaur:3, victreebel:71,
-    vileplume:45, wartortle:8, weedle:13, weepinbell:70, zapdos:145,
-  }
-
-  const DISCARD_ACTION: Record<string, number> = {
-    red: 71, yellow: 72, blue: 73, pink: 74, black: 75, master: 76,
-  }
-
-  function spriteUrl(name: string): string {
-    const id = DEX[name.toLowerCase()]
-    return id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : ''
-  }
-
-  function groupCost(cost: string[]): { gem: string; count: number }[] {
-    const counts: Record<string, number> = {}
-    const order: string[] = []
-    for (const g of cost) {
-      if (!(g in counts)) { counts[g] = 0; order.push(g) }
-      counts[g]++
-    }
-    return order.map(g => ({ gem: g, count: counts[g] }))
-  }
-
   function costTitle(cost: string[]): string {
-    return groupCost(cost).map(({ gem, count }) => `${count}${gem[0].toUpperCase()}`).join(' ')
+    return groupCost(cost).map(({ c, n }) => `${n}${c[0].toUpperCase()}`).join(' ')
   }
 
   $: orient = (position === 'top-left' || position === 'top-right') ? 'v' : 'h'
@@ -199,7 +160,7 @@
                       <img src={spriteUrl(card.evolve_into)} alt={card.evolve_into} width="18" height="18" draggable="false">
                       <span class="strip-name pp-name">{card.evolve_into}</span>
                       <div class="cost-chips">
-                        {#each groupCost(card.evolve) as { gem: g, count }}
+                        {#each groupCost(card.evolve) as { c: g, n: count }}
                           <span class="chip">
                             <img src={BALL[g]} alt={g} width="10" height="10" draggable="false">
                             <span class="pp-num" style="font-size:8px">{count}</span>
@@ -233,7 +194,7 @@
                     </div>
                     <div class="tile-cost">
                       {#if hasEvo}
-                        {#each groupCost(card.evolve) as { gem: g, count }}
+                        {#each groupCost(card.evolve) as { c: g, n: count }}
                           <span class="chip">
                             <img src={BALL[g]} alt={g} width="9" height="9" draggable="false">
                             <span class="pp-num" style="font-size:7px">{count}</span>
@@ -314,7 +275,7 @@
               <img src={spriteUrl(card.name)} alt={card.name} width="20" height="20" draggable="false">
               <span class="pp-name strip-name" style="max-width:52px">{card.name}</span>
               <div class="cost-chips" style="flex:1; justify-content:flex-end">
-                {#each groupCost(card.cost) as { gem: g, count }}
+                {#each groupCost(card.cost) as { c: g, n: count }}
                   <span class="chip">
                     <img src={BALL[g]} alt={g} width="10" height="10" draggable="false">
                     <span class="pp-num" style="font-size:8px">{count}</span>
@@ -387,7 +348,7 @@
                 <img src={spriteUrl(card.name)} alt={card.name} width="20" height="20" draggable="false">
                 <span class="pp-name strip-name" style="max-width:52px">{card.name}</span>
                 <div class="cost-chips" style="flex:1; justify-content:flex-end">
-                  {#each groupCost(card.cost) as { gem: g, count }}
+                  {#each groupCost(card.cost) as { c: g, n: count }}
                     <span class="chip">
                       <img src={BALL[g]} alt={g} width="10" height="10" draggable="false">
                       <span class="pp-num" style="font-size:8px">{count}</span>
@@ -448,7 +409,7 @@
                       <img src={spriteUrl(card.evolve_into)} alt={card.evolve_into} width="18" height="18" draggable="false">
                       <span class="strip-name pp-name">{card.evolve_into}</span>
                       <div class="cost-chips">
-                        {#each groupCost(card.evolve) as { gem: g, count }}
+                        {#each groupCost(card.evolve) as { c: g, n: count }}
                           <span class="chip">
                             <img src={BALL[g]} alt={g} width="10" height="10" draggable="false">
                             <span class="pp-num" style="font-size:8px">{count}</span>
@@ -482,7 +443,7 @@
                     </div>
                     <div class="tile-cost">
                       {#if hasEvo}
-                        {#each groupCost(card.evolve) as { gem: g, count }}
+                        {#each groupCost(card.evolve) as { c: g, n: count }}
                           <span class="chip">
                             <img src={BALL[g]} alt={g} width="9" height="9" draggable="false">
                             <span class="pp-num" style="font-size:7px">{count}</span>
