@@ -201,35 +201,33 @@
 </script>
 
 <div class="board">
-  <div class="token-pool" class:staging={$tokenSelectMode || $stagedTokens.length > 0}>
-    <div class="token-buttons">
-      {#each TOKEN_ORDER as t}
-        {@const count = displayedTokens[t] ?? 0}
-        <button
-          class="token"
-          class:pulse={$isMyTurn && canAddToken(t)}
-          class:dimmed={$isMyTurn && !canAddToken(t)}
-          class:empty={count === 0}
-          data-token-type={t}
-          title={t}
-          disabled={count === 0}
-          on:click={(e) => handleTokenClick(e, t)}
-        >
-          <img src={BALL[t]} alt={t} width="28" height="28" draggable="false">
-          <span class="tok-count">{count}</span>
-        </button>
-      {/each}
+  <div class="board-top">
+    <div class="pool">
+      <div class="token-buttons">
+        {#each TOKEN_ORDER as t}
+          {@const count = displayedTokens[t] ?? 0}
+          <button
+            class="token"
+            class:pulse={$isMyTurn && canAddToken(t)}
+            class:dimmed={$isMyTurn && !canAddToken(t)}
+            class:empty={count === 0}
+            data-token-type={t}
+            title={t}
+            disabled={count === 0}
+            on:click={(e) => handleTokenClick(e, t)}
+          >
+            <img src={BALL[t]} alt={t} width="28" height="28" draggable="false">
+            <span class="tok-count">{count}</span>
+          </button>
+        {/each}
+      </div>
+      {#if $tokenSelectMode || $stagedTokens.length > 0}
+        <TokenStagingArea />
+      {/if}
     </div>
-    {#if $tokenSelectMode || $stagedTokens.length > 0}
-      <div class="pool-divider"></div>
-      <TokenStagingArea />
-    {/if}
-  </div>
 
-  {#if board}
-    <!-- Row 1: Epic + Legendary share this row (5 cols) -->
-    <div class="card-row row-top">
-      <div class="card-cell empty"></div>
+    {#if board}
+    <div class="top-cards">
       <div class="card-cell deck-back tier-epic">
         <div class="deck-label">Epic</div>
         <span class="deck-count">{board.epic_deck_count}</span>
@@ -263,7 +261,10 @@
         </div>
       {/each}
     </div>
+    {/if}
+  </div>
 
+  {#if board}
     <!-- Rows 2–4: Rare, Uncommon, Common (deck back + 4 revealed each) -->
     {#each lowerRows as row}
       <div class="card-row row-lower">
@@ -298,10 +299,12 @@
 
 <style>
   .board { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
-  .token-pool { display: flex; align-items: center; padding: 8px 0; width: 100%; box-sizing: border-box; min-height: 56px; }
-  .token-buttons { display: flex; gap: 6px; flex-shrink: 0; margin: 0 auto; }
-  .token-pool.staging .token-buttons { margin: 0; }
-  .pool-divider { width: 1px; align-self: stretch; background: rgba(255,255,255,.12); margin: 0 12px; flex-shrink: 0; }
+  .board-top { display: flex; gap: 8px; align-items: flex-start; }
+  .pool { flex: 0 0 160px; display: flex; flex-direction: column; gap: 8px; }
+  .token-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .top-cards { flex: 1; display: flex; justify-content: flex-end; gap: 6px; }
+  .top-cards .card-cell { flex: none; width: 158px; }
+  .top-cards .deck-back { width: 52px; }
   .token {
     display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
     background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
@@ -318,9 +321,7 @@
     50%       { filter: drop-shadow(0 0 6px rgba(255,255,255,.55)); }
   }
   .card-row { display: grid; gap: 6px; }
-  .row-top   { grid-template-columns: 52px repeat(4, 158px); }
   .row-lower { grid-template-columns: 52px repeat(4, 158px); }
-  .row-top .deck-back { width: 52px; margin-left: auto; }
   .card-cell { height: 130px; position: relative; }
   .card-anim { position: absolute; inset: 0; }
   .deck-back { border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: default; position: relative; overflow: hidden; }
