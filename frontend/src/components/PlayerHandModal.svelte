@@ -6,6 +6,7 @@
   import { BALL } from '../lib/tokens'
   import type { PlayerState, PokemonCard } from '../lib/types'
   import CardDetailModal from './CardDetailModal.svelte'
+  import ReservedCard from './ReservedCard.svelte'
 
   export let player: PlayerState
   export let displayName: string
@@ -149,14 +150,7 @@
         <div class="field-label">Reserved · {player.reserved_cards.length}/3</div>
         <div class="xreserved">
           {#each player.reserved_cards as card, idx}
-            {@const catchable = canCatch(idx)}
-            <div class="xrm" class:xrm-catchable={catchable} on:click={() => openReservedDetail(card, idx)}>
-              <span class="rm-bar" style="background:{TIER_BAR[card.tier] ?? '#888'}"></span>
-              <img src={spriteUrl(card.name)} alt={card.name} width="18" height="18" draggable="false">
-              <span class="rm-name">{card.name}</span>
-              <span class="rm-pts">{card.point}</span>
-              {#if catchable}<span class="catch-tag">Catch</span>{/if}
-            </div>
+            <ReservedCard {card} size="lg" catchable={canCatch(idx)} on:click={() => openReservedDetail(card, idx)} />
           {/each}
           {#if player.reserved_cards.length === 0}
             <span class="none-text">— none —</span>
@@ -289,21 +283,6 @@
 
   /* Reserved */
   .xreserved { display: flex; flex-direction: column; gap: 6px; }
-  .xrm {
-    display: flex; align-items: center; gap: 4px;
-    background: rgba(255,255,255,.06); border-radius: 4px;
-    padding: 4px 7px 4px 0; overflow: hidden; cursor: default;
-  }
-  .xrm img { image-rendering: pixelated; display: block; }
-  .xrm.xrm-catchable { cursor: pointer; outline: 1.5px solid #ffd23f; animation: catch-pulse 1s ease-in-out infinite; }
-  @keyframes catch-pulse {
-    0%,100% { filter: drop-shadow(0 0 0px rgba(255,210,63,0)); }
-    50%     { filter: drop-shadow(0 0 5px rgba(255,210,63,.8)); }
-  }
-  .rm-bar { width: 2px; align-self: stretch; flex: none; }
-  .rm-name { font-family: 'Silkscreen', monospace; font-size: 9px; color: #fff; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rm-pts { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #fff; background: #0c0d12; border-radius: 3px; padding: 2px 3px; flex: none; }
-  .catch-tag { font-family: 'Silkscreen', monospace; font-size: 7px; background: #27ae60; color: #fff; border-radius: 3px; padding: 1px 4px; flex: none; }
   .none-text { font-family: 'Silkscreen', monospace; font-size: 9px; color: rgba(255,255,255,.3); }
 
   /* Buttons */
