@@ -85,41 +85,77 @@ uv run pokemon-splendor --mode train \
 uv run pokemon-splendor --mode train \
     --opponents denial,v7e.zip --episodes 1000000 \
     --resume v73p.zip --lr 0.00002 --save v73p3.zip --workers 8
+
+# Train from scratch with a larger network (512 wide, 4 layers)
+uv run pokemon-splendor --mode train --opponents random \
+    --episodes 200000 --hidden-size 512 --hidden-layers 4 --save v1-512.zip
 ```
 
-**Benchmark results (500 games, 4-player mixed):**
+`--hidden-size` and `--hidden-layers` set the PPO network width and depth for new models. They are **ignored on `--resume`** — the architecture is always read from the `.zip` file.
 
-| Model | Win rate | vs MCTS (50 sims) | Notes |
-|-------|----------|-------------------|-------|
-| v7e   | 33.0%    | —                 | baseline |
-| v73p  | 39.4%    | —                 | fine-tune from v7e |
-| v73p3 | 43.8%    | —                 | continued fine-tune |
-| v73p4 | 47.4%    | —                 | lr=1e-05 |
-| v73p5 | 54.4%    | —                 | lr=5e-06 |
-| v7-4p | 58.2%    | —                 | 4-player training vs denial,v73p4,v7e |
-| v7-4p2 | 60.6%  | —                 | +MCTS opponent (slow) |
-| v7-4p3 | 62.8%  | —                 | self-play opponents |
-| v7-sp  | 67.0%  | —                 | self-play vs self, lr=1e-06 |
-| v7-sp4 | 77.8%  | ~50%              | self-play x4 iterations |
-| v7-sp7 | 81.8%  | 57%               | self-play x7 iterations |
+**Benchmark results (500 games, 4-player mixed vs random/denial/early-capture):**
+
+| Model | Win rate | Notes |
+|-------|----------|-------|
+| v7e   | 33.0%    | baseline |
+| v73p  | 39.4%    | fine-tune from v7e |
+| v73p3 | 43.8%    | continued fine-tune |
+| v73p4 | 47.4%    | lr=1e-05 |
+| v73p5 | 54.4%    | lr=5e-06 |
+| v7-4p | 58.2%    | 4-player training vs denial,v73p4,v7e |
+| v7-4p2 | 60.6%  | +MCTS opponent (slow) |
+| v7-4p3 | 62.8%  | self-play opponents |
+| v7-sp  | 67.0%  | self-play vs self, lr=1e-06 |
+| v7-sp4 | 77.8%  | self-play x4 |
+| v7-sp7 | 81.8%  | self-play x7 |
+| v7-sp16 | 84.8% | self-play x16, lr raised to 3e-06 |
+| v7-sp20 | ~85%  | self-play x20, converged ceiling |
 
 v73p5 vs v73p4 in 2-player head-to-head: **58.8%**
 v7-4p vs v73p5 in 2-player head-to-head: **57.8%**
 
-**Note on MCTS benchmarks:** MCTS here uses early-capture as its rollout policy, which
-is a predictable heuristic with exploitable patterns. A fairer measure of strategic
-strength is MCTS using the model itself as rollout — v7-sp4 vs MCTS(v7-sp4 rollout,
-50 sims) showed **46%**, meaning explicit search still adds value on top of the learned
-policy.
+**Note on MCTS benchmarks:** The 4-player mixed benchmark saturates once the model
+dominates denial/early-capture. Use multi-model head-to-head (2000 games) and
+self-referential MCTS for later-stage evaluation:
+
+```bash
+# Multi-model spanning full range — best for detecting real progress
+uv run pokemon-splendor --mode benchmark --games 2000 \
+    --players v7-sp20.zip,v7-sp16.zip,v7-sp12.zip,v7-sp9.zip --workers 12
+
+# Self-referential MCTS — measures how much search adds over pure policy
+uv run pokemon-splendor --mode benchmark --games 400 \
+    --players v7-sp20.zip,mcts --mcts-sims 200 --mcts-depth 3 \
+    --mcts-opponent v7-sp20.zip --workers 8
+```
+
+v7-sp20 wins ~27% against MCTS(200 sims, depth 3) using its own policy as rollout.
+Explicit search still adds value; the gap closes as the policy improves.
 
 **Self-play curriculum (v7-sp series):**
+
+The fixed-opponent ceiling (~62%) was broken by training against the model itself.
+Self-play compounds: sp9→sp16→sp20 spans a 22pp gap in multi-model benchmarks.
+
 ```bash
+# Start self-play from best fixed-opponent model
 uv run pokemon-splendor --mode train \
-    --opponents denial,v7-sp7.zip,v7-sp7.zip --episodes 1000000 \
-    --resume v7-sp7.zip --lr 0.000001 --save v7-sp8.zip --workers 8
+    --opponents denial,v7-4p3.zip,v7-4p3.zip --episodes 1000000 \
+    --resume v7-4p3.zip --lr 0.000001 --save v7-sp.zip --workers 8
+
+# Continue — always train against current best twice
+uv run pokemon-splendor --mode train \
+    --opponents v7-sp16.zip,v7-sp19.zip,v7-sp19.zip --episodes 1000000 \
+    --resume v7-sp19.zip --lr 0.000008 --save v7-sp20.zip --workers 8
 ```
-Key lessons: use lr=1e-06 (5e-07 is too small — policy freezes), train against the
-current best model twice, keep denial for diversity.
+
+Key lessons:
+- **lr=1e-06** for early self-play; raise to **3e-06 then 8e-06** as clip_fraction approaches zero
+- **5e-07 is too small** — policy freezes (clip_fraction=0, no learning)
+- **Train against current best twice** — one diversity anchor (older model or denial)
+- **Adjacent benchmarks are unreliable** — per-iteration gains (~1-2pp) are smaller than benchmark noise; span 4+ iterations for a meaningful comparison
+- **Entropy collapse** (entropy_loss approaching -0.25) signals the policy is over-converging; inject diversity or raise lr
+- **Converged** when 2000-game head-to-head between consecutive models is ~50%
 
 ### Key training lessons
 
@@ -195,15 +231,30 @@ Meaningful play typically emerges after 50–100 iterations.
 ```bash
 # Train from scratch
 uv run pokemon-splendor --mode alpha-train \
-    --alpha-iters 200 --alpha-games 20 --alpha-sims 100 --alpha-depth 4 \
+    --alpha-iters 200 --alpha-games 100 --alpha-sims 100 --alpha-depth 4 \
     --alpha-checkpoint-dir alpha_checkpoints --workers 8
+
+# Train with a larger network (512×4)
+uv run pokemon-splendor --mode alpha-train \
+    --alpha-iters 200 --alpha-games 100 --alpha-sims 100 --alpha-depth 4 \
+    --alpha-hidden-size 512 --alpha-hidden-layers 4 \
+    --alpha-checkpoint-dir alpha_checkpoints_512 --workers 8
 
 # Resume from a checkpoint
 uv run pokemon-splendor --mode alpha-train \
     --alpha-resume alpha_checkpoints/alpha_0100.pt --alpha-start-iter 101 \
-    --alpha-iters 200 --alpha-games 20 --alpha-sims 100 --alpha-depth 4 \
+    --alpha-iters 200 --alpha-games 100 --alpha-sims 100 --alpha-depth 4 \
     --alpha-checkpoint-dir alpha_checkpoints --workers 8
 ```
+
+**Recommended: 100 games per iteration.** 20 games/iter produces noisy gradients that contaminate the replay buffer — once a bad model is accepted, it poisons the buffer in a feedback loop. 100 games/iter provides stable signal.
+
+**Migrate existing checkpoints** after a training run completes (one-time, idempotent):
+```bash
+uv run python scripts/migrate_alpha_checkpoints.py --dry-run  # preview
+uv run python scripts/migrate_alpha_checkpoints.py            # apply
+```
+This embeds architecture metadata into legacy `.pt` files so they load correctly after upgrading.
 
 **Benchmark results at 100 iterations:**
 - iter 100 vs iter 1: **67% win rate** — consistent improvement
