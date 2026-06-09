@@ -171,8 +171,11 @@ def test_real_alpha_checkpoint_loads():
 def test_real_rl_checkpoint_loads():
     """Real .zip checkpoint loads with MaskablePPO without specifying net_arch."""
     from sb3_contrib import MaskablePPO
-    from pokemon_splendor.engine.env import PokemonSplendorEnv
+    from sb3_contrib.common.wrappers import ActionMasker
+    from pokemon_splendor.agents.rl import SingleAgentEnv
     from pathlib import Path
-    env = PokemonSplendorEnv(Path("data/pokemon.jsonl"), num_players=2)
+    def mask_fn(env):
+        return env.action_masks()
+    env = ActionMasker(SingleAgentEnv(Path("data/pokemon.jsonl"), num_players=2), mask_fn)
     model = MaskablePPO.load(RL_CHECKPOINT, env=env)
     assert model is not None
