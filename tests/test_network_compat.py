@@ -143,3 +143,36 @@ def test_ppo_net_arch_construction():
     layers = [hidden_size] * hidden_layers
     net_arch = dict(pi=layers, vf=layers)
     assert net_arch == {"pi": [256, 256, 256], "vf": [256, 256, 256]}
+
+
+ALPHA_CHECKPOINT = "alpha_checkpoints/alpha_0001.pt"
+RL_CHECKPOINT = "v7e.zip"
+
+
+@pytest.mark.skipif(
+    not os.path.exists(ALPHA_CHECKPOINT),
+    reason=f"{ALPHA_CHECKPOINT} not present"
+)
+def test_real_alpha_checkpoint_loads():
+    """Real .pt checkpoint (pre-migration, raw state_dict) loads without error."""
+    net = AlphaNet.load(ALPHA_CHECKPOINT)
+    obs = torch.zeros(OBS_SIZE)
+    mask = torch.ones(TOTAL_ACTIONS, dtype=torch.bool)
+    policy, value = net(obs, mask)
+    assert policy.shape == (TOTAL_ACTIONS,)
+    assert value.shape == ()
+    assert abs(policy.sum().item() - 1.0) < 1e-5
+
+
+@pytest.mark.skipif(
+    not os.path.exists(RL_CHECKPOINT),
+    reason=f"{RL_CHECKPOINT} not present"
+)
+def test_real_rl_checkpoint_loads():
+    """Real .zip checkpoint loads with MaskablePPO without specifying net_arch."""
+    from sb3_contrib import MaskablePPO
+    from pokemon_splendor.engine.env import PokemonSplendorEnv
+    from pathlib import Path
+    env = PokemonSplendorEnv(Path("data/pokemon.jsonl"), num_players=2)
+    model = MaskablePPO.load(RL_CHECKPOINT, env=env)
+    assert model is not None
