@@ -107,3 +107,30 @@ def test_load_legacy_format_256x3():
         net2 = AlphaNet.load(path)
         linear_layers = [m for m in net2.shared if isinstance(m, torch.nn.Linear)]
         assert len(linear_layers) == 3
+
+
+from pathlib import Path
+from pokemon_splendor.agents.alpha_coach import AlphaCoach
+
+
+def test_alpha_coach_custom_architecture():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        coach = AlphaCoach(
+            jsonl_path=Path("data/pokemon.jsonl"),
+            num_players=2,
+            n_iterations=1,
+            games_per_iteration=2,
+            n_simulations=5,
+            depth=1,
+            batch_size=4,
+            buffer_size=100,
+            checkpoint_dir=tmpdir,
+            hidden_size=128,
+            num_layers=2,
+        )
+        coach.run()
+        # Load the checkpoint and verify architecture
+        net = AlphaNet.load(f"{tmpdir}/alpha_0001.pt")
+        linear_layers = [m for m in net.shared if isinstance(m, torch.nn.Linear)]
+        assert len(linear_layers) == 2
+        assert linear_layers[0].out_features == 128

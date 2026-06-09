@@ -124,14 +124,14 @@ def _self_play_worker(args: tuple) -> list[SelfPlayRecord]:
 
 def _eval_game(args: tuple) -> float:
     """Returns candidate's outcome (0–1) in one game against best."""
-    jsonl_path, candidate_state, best_state, num_players, n_simulations, depth = args
+    jsonl_path, candidate_state, best_state, num_players, n_simulations, depth, hidden_size, num_layers = args
     from pokemon_splendor.engine.env import PokemonSplendorEnv
     from pokemon_splendor.agents.alpha_mcts import AlphaMCTSAgent
 
-    candidate = AlphaNet()
+    candidate = AlphaNet(hidden_size=hidden_size, num_layers=num_layers)
     candidate.load_state_dict(candidate_state)
     candidate.eval()
-    best = AlphaNet()
+    best = AlphaNet(hidden_size=hidden_size, num_layers=num_layers)
     best.load_state_dict(best_state)
     best.eval()
 
@@ -177,12 +177,14 @@ def evaluate_candidate(
     n_simulations: int,
     depth: int,
     n_workers: int = 1,
+    hidden_size: int = 256,
+    num_layers: int = 3,
 ) -> float:
     """Returns candidate's average outcome over n_games against best."""
     candidate_state = {k: v.cpu() for k, v in candidate.state_dict().items()}
     best_state = {k: v.cpu() for k, v in best.state_dict().items()}
     args = [
-        (jsonl_path, candidate_state, best_state, num_players, n_simulations, depth)
+        (jsonl_path, candidate_state, best_state, num_players, n_simulations, depth, hidden_size, num_layers)
     ] * n_games
 
     if n_workers > 1:
@@ -214,6 +216,8 @@ class AlphaCoach:
         n_workers: int = 1,
         eval_games: int = 40,
         accept_threshold: float = 0.45,
+        hidden_size: int = 256,
+        num_layers: int = 3,
     ):
         self._jsonl_path = jsonl_path
         self._num_players = num_players
@@ -231,6 +235,8 @@ class AlphaCoach:
         self._n_workers = n_workers
         self._eval_games = eval_games
         self._accept_threshold = accept_threshold
+        self._hidden_size = hidden_size
+        self._num_layers = num_layers
 
     def _run_self_play_iteration(self, network: AlphaNet) -> list[list[SelfPlayRecord]]:
         args = [
@@ -251,7 +257,7 @@ class AlphaCoach:
             best_network = AlphaNet.load(self._resume_from)
             print(f"Resumed from {self._resume_from}")
         else:
-            best_network = AlphaNet()
+            best_network = AlphaNet(hidden_size=self._hidden_size, num_layers=self._num_layers)
         best_network.eval()
         replay_buffer: deque[SelfPlayRecord] = deque(maxlen=self._buffer_size)
 
@@ -280,6 +286,8 @@ class AlphaCoach:
                     self._jsonl_path, self._num_players,
                     self._eval_games, self._n_simulations, self._depth,
                     self._n_workers,
+                    hidden_size=self._hidden_size,
+                    num_layers=self._num_layers,
                 )
                 accepted = avg_outcome >= self._accept_threshold
                 print(f"  eval avg_outcome={avg_outcome:.3f} threshold={self._accept_threshold} → {'ACCEPTED' if accepted else 'rejected'}")
