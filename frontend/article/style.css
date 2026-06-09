@@ -1,0 +1,19 @@
+:root {
+  --bg: #0a0d12;
+  --fg: #f3f1ec;
+  --accent: #ff3d8a;
+  --muted: #9aa0a6;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); }
