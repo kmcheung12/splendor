@@ -44,14 +44,37 @@ export class WebGLNetworkViz implements NetworkVisualization {
     this.startLoop();
   }
 
-  setActivations(_obs: Float32Array, _layerOutputs: LayerActivations): void {
-    // Plan 5 wires activations to instance colours.
+  setActivations(obs: Float32Array, layerOutputs: LayerActivations): void {
+    if (!this.network) return;
+    const sources: Float32Array[] = [obs, ...layerOutputs.layers, layerOutputs.policy];
+    for (let li = 0; li < this.nodeMeshes.length; li++) {
+      const mesh = this.nodeMeshes[li];
+      const colorAttr = mesh.instanceColor;
+      if (!colorAttr) continue;
+      const src = sources[li];
+      if (!src) continue;
+      const count = mesh.count;
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor((i / count) * src.length);
+        const a = Math.max(0, Math.min(1, src[idx]));
+        colorAttr.setXYZ(i, 1.0, 0.24 + a * 0.6, 0.54 + a * 0.3);
+      }
+      colorAttr.needsUpdate = true;
+    }
   }
 
   setScrollProgress(t: number): void {
     this.scrollT = t;
     if (!this.camera) return;
-    this.camera.position.x = (t - 0.5) * 6;
+    const dollyT = Math.max(0, (t - 0.3)) / 0.7;
+    this.camera.position.x = (dollyT - 0.5) * 6;
+    const unfurl = Math.min(1, t / 0.3);
+    this.nodeMeshes.forEach((mesh, li) => {
+      mesh.position.z = (li - (this.nodeMeshes.length - 1) / 2) * unfurl * 1.5;
+    });
+    this.edgeLines.forEach((line, li) => {
+      line.position.z = (li - (this.edgeLines.length - 1) / 2) * unfurl * 1.5;
+    });
     this.camera.lookAt(0, 0, 0);
   }
 
@@ -84,11 +107,13 @@ export class WebGLNetworkViz implements NetworkVisualization {
       (i - (layerSizes.length - 1) / 2) * spacing,
     );
     const sphere = new THREE.SphereGeometry(0.05, 12, 12);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff3d8a });
+    const material = new THREE.MeshBasicMaterial({
+      vertexColors: false,
+    });
 
     layerSizes.forEach((size, li) => {
       const visible = Math.min(size, MAX_VISIBLE);
-      const mesh = new THREE.InstancedMesh(sphere, material, visible);
+      const mesh = new THREE.InstancedMesh(sphere, material.clone(), visible);
       const dummy = new THREE.Object3D();
       const yStep = visible > 1 ? 3 / (visible - 1) : 0;
       for (let i = 0; i < visible; i++) {
@@ -96,6 +121,15 @@ export class WebGLNetworkViz implements NetworkVisualization {
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       }
+      // Set up per-instance color
+      const colors = new Float32Array(visible * 3);
+      for (let i = 0; i < visible; i++) {
+        colors[i * 3] = 1.0;       // R
+        colors[i * 3 + 1] = 0.24;  // G
+        colors[i * 3 + 2] = 0.54;  // B
+      }
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
+      (mesh.material as THREE.MeshBasicMaterial).vertexColors = true;
       this.scene!.add(mesh);
       this.nodeMeshes.push(mesh);
     });
