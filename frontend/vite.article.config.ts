@@ -12,6 +12,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: { port: 5174 },
+  resolve: {
+    conditions: ['browser'],
+  },
   test: {
     environment: 'jsdom',
     globals: true,
