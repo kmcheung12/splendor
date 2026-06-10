@@ -22,7 +22,7 @@
       viz?.setScrollProgress(0.5);
     } else {
       cleanup = scrollScrub(stickyEl, (t) => viz?.setScrollProgress(t), {
-        pin: true, start: 'top top', end: '+=200%',
+        start: 'top top', end: 'bottom bottom',
       });
     }
   });

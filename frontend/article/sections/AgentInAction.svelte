@@ -49,8 +49,12 @@
       console.warn('ONNX load failed; activations will be skipped:', e);
     }
 
+    // Always reveal the full network — scroll drives activations + highlight,
+    // not the layer-reveal animation (that's NetworkAnatomy's job).
+    viz?.setScrollProgress(1);
+
     if (prefersReducedMotion()) {
-      viz?.setScrollProgress(0.5);
+      // No scrub; viz already at full reveal above.
     } else {
       cleanup = scrollScrub(stickyEl, async (t) => {
         if (!replay || !snapshots) return;
@@ -75,7 +79,7 @@
             desc: turn.action === tk.action ? turn.action_desc : `action ${tk.action}`,
           }));
         }
-      }, { pin: true, start: 'top top', end: '+=400%' });
+      }, { start: 'top top', end: 'bottom bottom' });
     }
   });
 
@@ -132,11 +136,22 @@
     height: 100vh;
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr);
     gap: 2rem;
     padding: 2rem;
   }
-  .left, .right { display: flex; flex-direction: column; gap: 1rem; }
+  .left, .right {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 0;
+    overflow: hidden;
+  }
   .viz { flex: 1; min-height: 0; }
+  .left :global(.board) { flex: 1; min-height: 0; overflow: hidden; }
+  .left :global(.grid) { flex: 1; min-height: 0; }
+  .left :global(.row) { min-height: 0; }
+  .left :global(.card) { aspect-ratio: auto; min-height: 0; }
   .value { display: grid; grid-template-columns: auto 1fr auto; gap: 0.75rem; align-items: center; font-size: 0.9rem; }
   .label { color: var(--muted); }
   .bar { background: rgba(255,255,255,0.06); height: 0.5rem; border-radius: 3px; overflow: hidden; }

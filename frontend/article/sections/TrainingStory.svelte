@@ -51,7 +51,7 @@
         const [b, tu] = mapScrollToBatchTurn(t, batchTurnCounts);
         currentBatchIdx = b;
         currentTurnIdx = tu;
-      }, { pin: true, start: 'top top', end: '+=400%' });
+      }, { start: 'top top', end: 'bottom bottom' });
     }
   });
 
@@ -102,6 +102,7 @@
     height: 100vh;
     display: grid;
     grid-template-columns: 1fr 1.4fr;
+    grid-template-rows: minmax(0, 1fr);
     gap: 3rem;
     padding: 3rem;
     align-items: center;
@@ -130,6 +131,25 @@
   .visuals {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+  }
+  .visuals :global(.board) {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .visuals :global(.grid) {
+    flex: 1;
+    min-height: 0;
+  }
+  .visuals :global(.row) {
+    min-height: 0;
+  }
+  .visuals :global(.card) {
+    aspect-ratio: auto;
+    min-height: 0;
   }
 </style>
