@@ -1,7 +1,7 @@
 <!-- frontend/article/sections/TrainingStory.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { scrollScrub } from '../lib/scrollProgress';
+  import { scrollScrub, prefersReducedMotion } from '../lib/scrollProgress';
   import { loadCurves, loadRunSummary } from '../lib/data';
   import { loadReplaySnapshots, type ReplaySnapshots } from '../replay/snapshot';
   import { mapScrollToBatchTurn } from '../replay/useReplayScrubber';
@@ -42,11 +42,17 @@
     const batchTurnCounts = storyBatches.map(
       (id) => snapshotsByBatch[id]?.turns.length ?? 0,
     );
-    cleanup = scrollScrub(stickyEl, (t) => {
-      const [b, tu] = mapScrollToBatchTurn(t, batchTurnCounts);
-      currentBatchIdx = b;
-      currentTurnIdx = tu;
-    }, { pin: true, start: 'top top', end: '+=400%' });
+    if (prefersReducedMotion()) {
+      // Show middle of the last story batch without pinning or scroll-driving.
+      currentBatchIdx = Math.floor(storyBatches.length / 2);
+      currentTurnIdx = 0;
+    } else {
+      cleanup = scrollScrub(stickyEl, (t) => {
+        const [b, tu] = mapScrollToBatchTurn(t, batchTurnCounts);
+        currentBatchIdx = b;
+        currentTurnIdx = tu;
+      }, { pin: true, start: 'top top', end: '+=400%' });
+    }
   });
 
   onDestroy(() => cleanup());

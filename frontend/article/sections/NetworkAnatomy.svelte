@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { createNetworkViz } from '../viz/createNetworkViz';
-  import { scrollScrub } from '../lib/scrollProgress';
+  import { scrollScrub, prefersReducedMotion } from '../lib/scrollProgress';
   import { loadNetworkSpec } from '../lib/data';
   import type { NetworkVisualization } from '../viz/NetworkVisualization';
 
@@ -18,9 +18,13 @@
       hiddenLayers: Array(spec.num_layers).fill(spec.hidden_size),
       outputSize: spec.output_size,
     });
-    cleanup = scrollScrub(stickyEl, (t) => viz?.setScrollProgress(t), {
-      pin: true, start: 'top top', end: '+=200%',
-    });
+    if (prefersReducedMotion()) {
+      viz?.setScrollProgress(0.5);
+    } else {
+      cleanup = scrollScrub(stickyEl, (t) => viz?.setScrollProgress(t), {
+        pin: true, start: 'top top', end: '+=200%',
+      });
+    }
   });
 
   onDestroy(() => {
