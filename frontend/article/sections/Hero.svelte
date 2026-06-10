@@ -1,4 +1,21 @@
+<script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
+  import { HeroParticles } from '../viz/HeroParticles';
+
+  let particleContainer: HTMLElement;
+  let particles: HeroParticles | null = null;
+
+  onMount(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduced) {
+      particles = new HeroParticles(particleContainer);
+    }
+  });
+  onDestroy(() => particles?.dispose());
+</script>
+
 <section class="hero">
+  <div class="particles" bind:this={particleContainer}></div>
   <div class="content">
     <h1>We taught a neural network<br />to play Splendor.</h1>
     <p class="subtitle">
@@ -12,12 +29,18 @@
 <style>
   .hero {
     min-height: 100vh;
+    position: relative;
     display: grid;
     place-items: center;
     text-align: center;
     padding: 4rem 1.5rem;
   }
-  .content { max-width: 56rem; }
+  .particles {
+    position: absolute; inset: 0;
+    z-index: 0;
+    opacity: 0.65;
+  }
+  .content { position: relative; z-index: 1; max-width: 56rem; }
   h1 {
     font-size: clamp(2.5rem, 7vw, 5rem);
     font-weight: 700;
