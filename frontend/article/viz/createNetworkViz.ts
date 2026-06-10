@@ -17,13 +17,12 @@ export function isWebGLAvailable(): boolean {
     ctx.compileShader(vs);
     const ok = !!ctx.getShaderParameter(vs, ctx.COMPILE_STATUS);
     ctx.deleteShader(vs);
-    // Also check the standard "WebGL is masked" sentinel via DEBUG_RENDERER_INFO
-    const dbg = ctx.getExtension('WEBGL_debug_renderer_info');
-    if (dbg) {
-      const renderer = ctx.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
-      if (typeof renderer === 'string' && /Disabled|SwiftShader/i.test(renderer)) {
-        return false;
-      }
+    // Check the standard RENDERER for "WebGL is masked / disabled" sentinels.
+    // WEBGL_debug_renderer_info is deprecated in Firefox; the unmasked RENDERER
+    // is enough for our purposes (detecting headless / disabled accel stubs).
+    const renderer = ctx.getParameter(ctx.RENDERER);
+    if (typeof renderer === 'string' && /Disabled|SwiftShader/i.test(renderer)) {
+      return false;
     }
     return ok;
   } catch {

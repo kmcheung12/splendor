@@ -1,5 +1,13 @@
 import type { LayerActivations } from '../viz/types';
 
+// onnxruntime-web's package exports don't expose the .wasm files for direct
+// import, and its default WASM URL resolution doesn't work under Vite's SPA
+// dev server (returns text/html). Point wasmPaths at the matching jsDelivr
+// build — same files the npm package ships, but with the correct MIME type
+// and stable across dev/prod.
+const ORT_VERSION = '1.26.0';
+const ORT_WASM_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
+
 let session: any | null = null;
 let loading: Promise<void> | null = null;
 
@@ -8,6 +16,7 @@ export async function loadOnnxNetwork(runId: string): Promise<void> {
   if (loading) return loading;
   loading = (async () => {
     const ort = await import('onnxruntime-web');
+    ort.env.wasm.wasmPaths = ORT_WASM_BASE;
     const modelUrl = `/runs/${runId}/network.onnx`;
     const dataUrl = `/runs/${runId}/network.onnx.data`;
     const [modelBuf, dataBuf] = await Promise.all([
