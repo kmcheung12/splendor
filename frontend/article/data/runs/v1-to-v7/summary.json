@@ -1,0 +1,379 @@
+{
+  "title": "First curriculum",
+  "batches": [
+    {
+      "id": "v1",
+      "stage": 1,
+      "opponents": [
+        "random"
+      ],
+      "episodes": 200000,
+      "lr": 0.0001,
+      "result": {
+        "total_timesteps": 0,
+        "explained_variance": 0.0,
+        "entropy_loss": 0.0,
+        "value_loss": 0.0,
+        "clip_fraction": 0.0
+      },
+      "benchmarks": [],
+      "narrative": "The first version played against a completely random opponent.\nIt had no idea how Splendor worked — its only signal was \"did I win?\".\nAfter 200,000 games it still hadn't learned to buy anything."
+    },
+    {
+      "id": "v2",
+      "stage": 2,
+      "opponents": [
+        "high-point"
+      ],
+      "episodes": 300000,
+      "lr": 0.0001,
+      "result": {
+        "total_timesteps": 0,
+        "explained_variance": 0.0,
+        "entropy_loss": 0.0,
+        "value_loss": 0.0,
+        "clip_fraction": 0.0
+      },
+      "benchmarks": [],
+      "narrative": ""
+    },
+    {
+      "id": "v2",
+      "stage": 2,
+      "opponents": [
+        "high-point"
+      ],
+      "episodes": 300000,
+      "lr": 0.0001,
+      "result": {
+        "total_timesteps": 303104,
+        "explained_variance": -0.0801,
+        "entropy_loss": -1.78,
+        "value_loss": 0.0231,
+        "clip_fraction": 0.281
+      },
+      "benchmarks": [],
+      "narrative": ""
+    },
+    {
+      "id": "v2b",
+      "stage": 2,
+      "opponents": [
+        "high-point"
+      ],
+      "episodes": 500000,
+      "lr": 0.0001,
+      "result": {
+        "total_timesteps": 507904,
+        "explained_variance": 0.115,
+        "entropy_loss": -1.27,
+        "value_loss": 0.0248,
+        "clip_fraction": 0.0
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v2b-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.11,
+            0.0,
+            0.3,
+            0.59
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v2b-256x3.zip",
+            "high-point"
+          ],
+          "win_rates": [
+            0.385,
+            0.615
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "Still below 55% vs high-point. Continuing stage 2 for 500k more steps at lower lr."
+    },
+    {
+      "id": "v2c",
+      "stage": 2,
+      "opponents": [
+        "high-point"
+      ],
+      "episodes": 500000,
+      "lr": 0.00005,
+      "result": {
+        "total_timesteps": 507904,
+        "explained_variance": 0.00976,
+        "entropy_loss": -1.08,
+        "value_loss": 0.0415,
+        "clip_fraction": 0.0
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v2c-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.165,
+            0.0,
+            0.345,
+            0.49
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v2c-256x3.zip",
+            "high-point"
+          ],
+          "win_rates": [
+            0.45,
+            0.55
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "Still below 55% threshold. Lower lr slowed progress. Returning to lr=1e-04 for 500k more steps."
+    },
+    {
+      "id": "v2d",
+      "stage": 2,
+      "opponents": [
+        "high-point"
+      ],
+      "episodes": 500000,
+      "lr": 0.0001,
+      "result": {
+        "total_timesteps": 507904,
+        "explained_variance": -0.163,
+        "entropy_loss": -0.965,
+        "value_loss": 0.0301,
+        "clip_fraction": 0.0
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v2d-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.105,
+            0.0,
+            0.365,
+            0.53
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v2d-256x3.zip",
+            "high-point"
+          ],
+          "win_rates": [
+            0.445,
+            0.555
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "Plateau at ~45% vs high-point after 1.8M total steps. Solo high-point training not converging further. Switching to mixed opponents (denial+high-point) to break plateau."
+    },
+    {
+      "id": "v3",
+      "stage": 3,
+      "opponents": [
+        "denial",
+        "high-point"
+      ],
+      "episodes": 500000,
+      "lr": 0.0001,
+      "result": {
+        "total_timesteps": 507904,
+        "explained_variance": 0.0412,
+        "entropy_loss": -1.0,
+        "value_loss": 0.0272,
+        "clip_fraction": 0.0
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v3-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.125,
+            0.0,
+            0.365,
+            0.51
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v3-256x3.zip",
+            "high-point"
+          ],
+          "win_rates": [
+            0.56,
+            0.44
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "Mixing denial and high-point as opponents broke a plateau the agent\nhad been stuck on. Two adversarial strategies forced the agent to\ndevelop a more general policy."
+    },
+    {
+      "id": "v4",
+      "stage": 4,
+      "opponents": [
+        "denial",
+        "models/v3-256x3.zip"
+      ],
+      "episodes": 500000,
+      "lr": 0.00003,
+      "result": {
+        "total_timesteps": 507904,
+        "explained_variance": -0.077,
+        "entropy_loss": -0.876,
+        "value_loss": 0.0923,
+        "clip_fraction": 0.13
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v4-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.235,
+            0.0,
+            0.265,
+            0.5
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v4-256x3.zip",
+            "v3-256x3.zip"
+          ],
+          "win_rates": [
+            0.565,
+            0.435
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "v4 beats v3 head-to-head (56.5%). 4-player improves from 12.5% to 23.5%. Explained_variance still negative — critic not converged. Continuing stage 4 with denial+v4 to reinforce self-play loop."
+    },
+    {
+      "id": "v5",
+      "stage": 5,
+      "opponents": [
+        "denial",
+        "models/v4-256x3.zip"
+      ],
+      "episodes": 500000,
+      "lr": 0.00003,
+      "result": {
+        "total_timesteps": 507904,
+        "explained_variance": -0.079,
+        "entropy_loss": -0.798,
+        "value_loss": 0.097,
+        "clip_fraction": 0.125
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v5-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.19,
+            0.0,
+            0.305,
+            0.505
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v5-256x3.zip",
+            "v4-256x3.zip"
+          ],
+          "win_rates": [
+            0.585,
+            0.415
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "v5 beats v4 head-to-head (58.5%) but regresses in 4-player (19% vs v4's 23.5%). Classic overfitting to denial+v4 opponent pair. Critic still not converged (explained_variance negative). Switching to 3-opponent 4-player training (denial+v5+v4) for v6 to restore generalisation."
+    },
+    {
+      "id": "v6",
+      "stage": 6,
+      "opponents": [
+        "denial",
+        "models/v5-256x3.zip",
+        "models/v4-256x3.zip"
+      ],
+      "episodes": 1000000,
+      "lr": 0.00002,
+      "result": {
+        "total_timesteps": 1007616,
+        "explained_variance": -0.034,
+        "entropy_loss": -0.684,
+        "value_loss": 0.104,
+        "clip_fraction": 0.084
+      },
+      "benchmarks": [
+        {
+          "opponents": [
+            "v6-256x3.zip",
+            "random",
+            "early-capture",
+            "denial"
+          ],
+          "win_rates": [
+            0.365,
+            0.0,
+            0.27,
+            0.365
+          ],
+          "games": 200
+        },
+        {
+          "opponents": [
+            "v6-256x3.zip",
+            "v5-256x3.zip"
+          ],
+          "win_rates": [
+            0.71,
+            0.29
+          ],
+          "games": 200
+        }
+      ],
+      "narrative": "Training against three opponents (denial + two earlier self-play\nversions) restored the agent's generalisation after v5 had\nover-specialised. v6 was the first version to beat denial in\nfour-player play."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "id": "v1-to-v7",
+      "title": "First curriculum",
+      "default": true
+    }
+  ]
+}

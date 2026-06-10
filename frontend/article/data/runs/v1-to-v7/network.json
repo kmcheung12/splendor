@@ -1,0 +1,6 @@
+{
+  "hidden_size": 256,
+  "num_layers": 3,
+  "input_size": 345,
+  "output_size": 108
+}

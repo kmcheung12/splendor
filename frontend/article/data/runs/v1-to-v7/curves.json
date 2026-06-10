@@ -1,0 +1,74 @@
+{
+  "batches": [
+    {
+      "id": "v1",
+      "total_timesteps": 0,
+      "explained_variance": 0.0,
+      "entropy_loss": 0.0,
+      "value_loss": 0.0
+    },
+    {
+      "id": "v2",
+      "total_timesteps": 0,
+      "explained_variance": 0.0,
+      "entropy_loss": 0.0,
+      "value_loss": 0.0
+    },
+    {
+      "id": "v2",
+      "total_timesteps": 303104,
+      "explained_variance": -0.0801,
+      "entropy_loss": -1.78,
+      "value_loss": 0.0231
+    },
+    {
+      "id": "v2b",
+      "total_timesteps": 507904,
+      "explained_variance": 0.115,
+      "entropy_loss": -1.27,
+      "value_loss": 0.0248
+    },
+    {
+      "id": "v2c",
+      "total_timesteps": 507904,
+      "explained_variance": 0.00976,
+      "entropy_loss": -1.08,
+      "value_loss": 0.0415
+    },
+    {
+      "id": "v2d",
+      "total_timesteps": 507904,
+      "explained_variance": -0.163,
+      "entropy_loss": -0.965,
+      "value_loss": 0.0301
+    },
+    {
+      "id": "v3",
+      "total_timesteps": 507904,
+      "explained_variance": 0.0412,
+      "entropy_loss": -1.0,
+      "value_loss": 0.0272
+    },
+    {
+      "id": "v4",
+      "total_timesteps": 507904,
+      "explained_variance": -0.077,
+      "entropy_loss": -0.876,
+      "value_loss": 0.0923
+    },
+    {
+      "id": "v5",
+      "total_timesteps": 507904,
+      "explained_variance": -0.079,
+      "entropy_loss": -0.798,
+      "value_loss": 0.097
+    },
+    {
+      "id": "v6",
+      "total_timesteps": 1007616,
+      "explained_variance": -0.034,
+      "entropy_loss": -0.684,
+      "value_loss": 0.104
+    }
+  ]
+}
