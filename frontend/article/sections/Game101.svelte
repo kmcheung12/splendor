@@ -1,3 +1,24 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { loadReplaySnapshots, type ReplaySnapshots } from '../replay/snapshot';
+  import GameReplayPlayer from '../replay/GameReplayPlayer.svelte';
+
+  let snapshots: ReplaySnapshots | null = null;
+  // Pick a mid-game turn so the board has cards bought and tokens distributed —
+  // a richer illustration than the empty opening state.
+  $: midSnapshot = snapshots
+    ? snapshots.turns[Math.min(snapshots.turns.length - 1, Math.floor(snapshots.turns.length * 0.4))]
+    : null;
+
+  onMount(async () => {
+    try {
+      snapshots = await loadReplaySnapshots('v6-seed42');
+    } catch (e) {
+      console.warn('Game101 snapshot load failed:', e);
+    }
+  });
+</script>
+
 <section class="game101">
   <div class="prose">
     <h2>Splendor in 90 seconds</h2>
@@ -13,9 +34,12 @@
       evolution chains.
     </p>
   </div>
-  <!-- Mini board mockup placeholder. Replaced in Plan 4 with GameReplayPlayer. -->
-  <aside class="board-placeholder">
-    <span>Mini board renders here in Plan 4</span>
+  <aside class="board">
+    {#if midSnapshot}
+      <GameReplayPlayer
+        snapshot={midSnapshot.snapshot}
+        description={midSnapshot.description} />
+    {/if}
   </aside>
 </section>
 
@@ -36,13 +60,11 @@
   }
   .prose p { font-size: 1.15rem; color: #d6d3cb; }
   .aside { color: var(--muted); font-size: 1rem; }
-  .board-placeholder {
-    aspect-ratio: 1;
-    border: 1px dashed rgba(255,255,255,0.1);
-    display: grid;
-    place-items: center;
-    color: var(--muted);
-    font-size: 0.9rem;
+  .board {
+    padding: 1rem;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    min-height: 24rem;
   }
   @media (max-width: 800px) {
     .game101 { grid-template-columns: 1fr; }
