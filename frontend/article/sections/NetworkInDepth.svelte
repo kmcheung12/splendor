@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { createNetworkVizAsync } from '../viz/createNetworkViz';
+  import { createNetworkViz, createNetworkVizAsync } from '../viz/createNetworkViz';
   import { scrollScrub, prefersReducedMotion } from '../lib/scrollProgress';
   import { loadNetworkSpec } from '../lib/data';
   import type { NetworkVisualization } from '../viz/NetworkVisualization';
@@ -12,12 +12,20 @@
 
   onMount(async () => {
     const spec = await loadNetworkSpec('v1-to-v7');
-    viz = await createNetworkVizAsync('webgl');
-    viz.mount(containerEl, {
+    const netSpec = {
       inputSize: spec.input_size,
       hiddenLayers: Array(spec.num_layers).fill(spec.hidden_size),
       outputSize: spec.output_size,
-    });
+    };
+    viz = await createNetworkVizAsync('webgl');
+    try {
+      viz.mount(containerEl, netSpec);
+    } catch (e) {
+      console.warn('WebGL mount failed; using Canvas2D:', e);
+      viz.dispose();
+      viz = createNetworkViz('canvas2d');
+      viz.mount(containerEl, netSpec);
+    }
     if (prefersReducedMotion()) {
       viz?.setScrollProgress(0.5);
     } else {

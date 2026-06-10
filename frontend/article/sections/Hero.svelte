@@ -1,14 +1,19 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { HeroParticles } from '../viz/HeroParticles';
+  import { isWebGLAvailable } from '../viz/createNetworkViz';
 
   let particleContainer: HTMLElement;
   let particles: HeroParticles | null = null;
 
   onMount(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!reduced) {
+    if (reduced) return;
+    if (!isWebGLAvailable()) return;
+    try {
       particles = new HeroParticles(particleContainer);
+    } catch (e) {
+      console.warn('HeroParticles disabled:', e);
     }
   });
   onDestroy(() => particles?.dispose());

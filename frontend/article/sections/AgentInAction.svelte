@@ -5,7 +5,7 @@
   import { loadReplay, loadNetworkSpec } from '../lib/data';
   import { loadReplaySnapshots, type ReplaySnapshots } from '../replay/snapshot';
   import { loadOnnxNetwork, runNetwork } from '../lib/onnxRunner';
-  import { createNetworkVizAsync } from '../viz/createNetworkViz';
+  import { createNetworkViz, createNetworkVizAsync } from '../viz/createNetworkViz';
   import GameReplayPlayer from '../replay/GameReplayPlayer.svelte';
   import type { NetworkVisualization } from '../viz/NetworkVisualization';
   import type { Replay } from '../lib/types';
@@ -25,17 +25,29 @@
 
   onMount(async () => {
     const spec = await loadNetworkSpec('v1-to-v7');
-    viz = await createNetworkVizAsync('webgl');
-    viz.mount(vizContainer, {
+    const netSpec = {
       inputSize: spec.input_size,
       hiddenLayers: Array(spec.num_layers).fill(spec.hidden_size),
       outputSize: spec.output_size,
-    });
+    };
+    viz = await createNetworkVizAsync('webgl');
+    try {
+      viz.mount(vizContainer, netSpec);
+    } catch (e) {
+      console.warn('WebGL mount failed; using Canvas2D:', e);
+      viz.dispose();
+      viz = createNetworkViz('canvas2d');
+      viz.mount(vizContainer, netSpec);
+    }
     [replay, snapshots] = await Promise.all([
       loadReplay('v1-to-v7', 'v6-seed42'),
       loadReplaySnapshots('v6-seed42'),
     ]);
-    await loadOnnxNetwork('v1-to-v7');
+    try {
+      await loadOnnxNetwork('v1-to-v7');
+    } catch (e) {
+      console.warn('ONNX load failed; activations will be skipped:', e);
+    }
 
     if (prefersReducedMotion()) {
       viz?.setScrollProgress(0.5);

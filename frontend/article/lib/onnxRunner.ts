@@ -8,9 +8,22 @@ export async function loadOnnxNetwork(runId: string): Promise<void> {
   if (loading) return loading;
   loading = (async () => {
     const ort = await import('onnxruntime-web');
-    session = await ort.InferenceSession.create(`/runs/${runId}/network.onnx`, {
-      executionProviders: ['wasm'],
-    });
+    const modelUrl = `/runs/${runId}/network.onnx`;
+    const dataUrl = `/runs/${runId}/network.onnx.data`;
+    const [modelBuf, dataBuf] = await Promise.all([
+      fetch(modelUrl).then((r) => r.arrayBuffer()),
+      fetch(dataUrl).then((r) => (r.ok ? r.arrayBuffer() : null)),
+    ]);
+    const options: Record<string, unknown> = { executionProviders: ['wasm'] };
+    if (dataBuf) {
+      options.externalData = [
+        { data: new Uint8Array(dataBuf), path: 'network.onnx.data' },
+      ];
+    }
+    session = await ort.InferenceSession.create(
+      new Uint8Array(modelBuf),
+      options as never,
+    );
   })();
   return loading;
 }
