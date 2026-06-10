@@ -58,7 +58,7 @@
   onDestroy(() => cleanup());
 </script>
 
-<section class="training-story" bind:this={stickyEl}>
+<section id="training" class="training-story" bind:this={stickyEl}>
   <div class="sticky-frame">
     <div class="story-text">
       {#if currentBatchInfo}

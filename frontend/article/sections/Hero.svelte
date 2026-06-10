@@ -27,6 +27,18 @@
       One million games. Seven generations. Here's how the agent learned —
       and how we know it really did.
     </p>
+    <nav class="toc" aria-label="Contents">
+      <span class="toc-label">Contents</span>
+      <ol>
+        <li><a href="#game">Splendor in 90 seconds</a></li>
+        <li><a href="#rl">How a network learns by playing</a></li>
+        <li><a href="#anatomy">The shape of the network</a></li>
+        <li><a href="#training">Watching it learn, batch by batch</a></li>
+        <li><a href="#in-depth">The same network, in three dimensions</a></li>
+        <li><a href="#in-action">The agent, mid-decision</a></li>
+        <li><a href="#closing">Try it yourself</a></li>
+      </ol>
+    </nav>
     <div class="scroll-hint">Scroll to begin</div>
   </div>
 </section>
@@ -59,8 +71,56 @@
     max-width: 38rem;
     margin: 0 auto;
   }
+  .toc {
+    margin: 3rem auto 0;
+    max-width: 32rem;
+    text-align: left;
+  }
+  .toc-label {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0.7;
+    margin-bottom: 0.75rem;
+  }
+  .toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: chapter;
+    display: grid;
+    gap: 0.4rem;
+  }
+  .toc li {
+    counter-increment: chapter;
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    font-size: 1rem;
+  }
+  .toc li::before {
+    content: counter(chapter, decimal-leading-zero);
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    min-width: 1.5rem;
+  }
+  .toc a {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    padding-bottom: 0.05em;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
   .scroll-hint {
-    margin-top: 4rem;
+    margin-top: 3rem;
     font-size: 0.8rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;

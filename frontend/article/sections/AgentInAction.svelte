@@ -85,7 +85,7 @@
   });
 </script>
 
-<section class="agent-in-action" bind:this={stickyEl}>
+<section id="in-action" class="agent-in-action" bind:this={stickyEl}>
   <div class="sticky-frame">
     <div class="left">
       {#if currentSnapshot}

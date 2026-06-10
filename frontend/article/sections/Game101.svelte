@@ -19,7 +19,7 @@
   });
 </script>
 
-<section class="game101">
+<section id="game" class="game101">
   <div class="prose">
     <h2>Splendor in 90 seconds</h2>
     <p>

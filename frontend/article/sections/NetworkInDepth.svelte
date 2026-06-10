@@ -41,7 +41,7 @@
   });
 </script>
 
-<section class="network-in-depth" bind:this={stickyEl}>
+<section id="in-depth" class="network-in-depth" bind:this={stickyEl}>
   <div class="sticky-frame">
     <div class="viz" bind:this={containerEl}></div>
     <aside class="callouts">

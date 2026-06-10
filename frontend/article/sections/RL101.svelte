@@ -1,4 +1,4 @@
-<section class="rl101">
+<section id="rl" class="rl101">
   <div class="prose">
     <h2>How a network learns by playing</h2>
     <p>

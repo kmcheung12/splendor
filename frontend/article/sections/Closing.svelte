@@ -1,4 +1,4 @@
-<section class="closing">
+<section id="closing" class="closing">
   <div class="prose">
     <h2>Try it yourself.</h2>
     <p>
