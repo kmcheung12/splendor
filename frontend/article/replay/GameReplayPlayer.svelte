@@ -1,6 +1,7 @@
 <!-- frontend/article/replay/GameReplayPlayer.svelte -->
 <script lang="ts">
   import type { BoardSnapshot } from './snapshot';
+  import { spriteUrl } from './sprite';
 
   export let snapshot: BoardSnapshot;
   export let description: string = '';
@@ -23,10 +24,18 @@
         {#each (snapshot[tier] as any[]) as card}
           {#if card}
             <div class="card" data-tier={card.tier}>
+              {#if spriteUrl(card.name)}
+                <img
+                  class="art"
+                  src={spriteUrl(card.name)}
+                  alt={card.name}
+                  loading="lazy"
+                  decoding="async" />
+              {/if}
               <div class="name">{card.name}</div>
               <div class="meta">
                 <span>+{card.point}</span>
-                <span>{card.bonus ?? ''}</span>
+                <span class="bonus" data-bonus={card.bonus ?? ''}>{card.bonus ?? ''}</span>
               </div>
             </div>
           {:else}
@@ -74,7 +83,9 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
+    position: relative;
+    overflow: hidden;
   }
   .card.empty {
     background: rgba(255,255,255,0.015);
@@ -85,8 +96,21 @@
   .card[data-tier="rare"] { background: rgba(255,196,77,0.3); }
   .card[data-tier="uncommon"] { background: rgba(220,220,220,0.2); }
   .card[data-tier="common"] { background: rgba(170,120,80,0.25); }
-  .name { font-weight: 600; }
-  .meta { display: flex; justify-content: space-between; color: rgba(255,255,255,0.7); }
+  .art {
+    width: 100%;
+    flex: 1;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    min-height: 0;
+  }
+  .name { font-weight: 600; line-height: 1.1; }
+  .meta { display: flex; justify-content: space-between; color: rgba(255,255,255,0.85); }
+  .bonus[data-bonus="red"] { color: #ff7676; }
+  .bonus[data-bonus="yellow"] { color: #ffd45a; }
+  .bonus[data-bonus="blue"] { color: #66b7ff; }
+  .bonus[data-bonus="pink"] { color: #ff9bd9; }
+  .bonus[data-bonus="black"] { color: #c0c0c0; }
   .caption {
     margin: 0; color: var(--muted); font-size: 0.85rem;
   }
