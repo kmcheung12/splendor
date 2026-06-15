@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-OBS_SIZE = 345
+from pokemon_splendor.engine.observation import OBS_SIZE
 TOTAL_ACTIONS = 108
 
 

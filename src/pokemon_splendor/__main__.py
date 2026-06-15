@@ -71,6 +71,12 @@ def main():
                         help="AlphaNet hidden layer count (default 3)")
     parser.add_argument("--workers", type=int, default=1,
                         help="Number of parallel workers for train/alpha-train (default 1)")
+    parser.add_argument("--device", default="cpu",
+                        help="PyTorch device for PPO training: cpu, mps, cuda (default cpu)")
+    parser.add_argument("--batch-size", type=int, default=64,
+                        help="PPO minibatch size for gradient updates (default 64)")
+    parser.add_argument("--obs", choices=["new", "deprecated"], default="new",
+                        help="Observation version: 'new' (487-dim, default) or 'deprecated' (345-dim old obs)")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--data", default="data/pokemon.jsonl")
     args = parser.parse_args()
@@ -85,7 +91,7 @@ def main():
         run_data_repl(jsonl)
     elif args.mode == "train":
         opponent_types = [a.strip() for a in args.opponents.split(",")]
-        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers, args.hidden_size, args.hidden_layers)
+        _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers, args.hidden_size, args.hidden_layers, args.device, args.batch_size, args.obs)
     elif args.mode == "benchmark":
         _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent, args.workers)
     elif args.mode == "alpha-train":
@@ -143,7 +149,10 @@ def _make_agent(agent_type: str, env=None, player_name: str = None,
     raise ValueError(f"Unknown agent type: {agent_type}")
 
 
-def _call_agent(agent, obs, mask) -> int:
+def _call_agent(agent, obs, mask, game=None, player_name=None) -> int:
+    obs_fn = getattr(agent, "_obs_fn", None)
+    if obs_fn is not None and game is not None:
+        obs = obs_fn(game, player_name)
     if callable(agent):
         return agent(obs, mask)
     return int(agent.act(obs, mask))
@@ -186,7 +195,7 @@ def _run_game(jsonl: Path, agent_types: list[str], render_mode: str | None,
             if agent_name in human_agents and any(v is not None for v in last_desc.values()):
                 _print_round_summary(env.possible_agents, agent_name, last_desc)
         player = next(p for p in env.game.players if p.name == agent_name)
-        action = _call_agent(agents_map[agent_name], obs, mask)
+        action = _call_agent(agents_map[agent_name], obs, mask, game=env.game, player_name=agent_name)
         last_desc[agent_name] = describe_action(action, env.game, player)
         env.step(action)
 
@@ -239,7 +248,7 @@ def _run_one_benchmark_game(args: tuple) -> int:
         obs, _, term, trunc, _ = env.last()
         if term or trunc:
             break
-        env.step(_call_agent(agents_map[name], obs, env.action_mask(name)))
+        env.step(_call_agent(agents_map[name], obs, env.action_mask(name), game=env.game, player_name=name))
     winner = max(env.game.players, key=lambda p: (p.points, len(p.cards)))
     return env.possible_agents.index(winner.name)
 
@@ -286,10 +295,20 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
                learning_rate: float = 0.0001,
                n_workers: int = 1,
                hidden_size: int = 256,
-               hidden_layers: int = 3):
+               hidden_layers: int = 3,
+               device: str = "cpu",
+               batch_size: int = 64,
+               obs_version: str = "new"):
     from sb3_contrib import MaskablePPO
     from sb3_contrib.common.wrappers import ActionMasker
     from pokemon_splendor.agents.rl import SingleAgentEnv
+
+    if obs_version == "deprecated":
+        from pokemon_splendor.engine.deprecated_observation import compute_observation as obs_fn
+        from pokemon_splendor.engine.observation import _DEPRECATED_OBS_SIZE as obs_size
+        print(f"Using deprecated 345-dim observation")
+    else:
+        obs_fn, obs_size = None, None
 
     opponent_types = opponent_types or ["random"]
     num_players = len(opponent_types) + 1
@@ -299,7 +318,8 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
 
     def make_env():
         return ActionMasker(
-            SingleAgentEnv(jsonl, num_players=num_players, opponent_types=opponent_types),
+            SingleAgentEnv(jsonl, num_players=num_players, opponent_types=opponent_types,
+                           obs_fn=obs_fn, obs_size=obs_size),
             mask_fn,
         )
 
@@ -311,14 +331,16 @@ def _run_train(jsonl: Path, episodes: int, save_path: str,
         env = make_env()
 
     if resume_path:
-        model = MaskablePPO.load(resume_path, env=env,
+        model = MaskablePPO.load(resume_path, env=env, device=device,
                                  custom_objects={"learning_rate": learning_rate})
-        print(f"Resuming from {resume_path} (lr={learning_rate})")
+        print(f"Resuming from {resume_path} (lr={learning_rate}, device={device})")
     else:
         layers = [hidden_size] * hidden_layers
         model = MaskablePPO("MlpPolicy", env, verbose=1,
                             learning_rate=learning_rate,
+                            batch_size=batch_size,
                             vf_coef=0.5,
+                            device=device,
                             policy_kwargs={"net_arch": dict(pi=layers, vf=layers)})
 
     model.learn(total_timesteps=episodes)

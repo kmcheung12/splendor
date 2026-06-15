@@ -11,15 +11,41 @@ from pokemon_splendor.engine.actions import (
     MAX_OWNED_CARDS,
 )
 
-_OBS_SIZE = 6 + 14 * 20 + 4 * 13 + 4 + 3  # = 345
+# Normalization constants — upper bounds for each feature type
+MAX_TOKENS_PER_TYPE      = 10.0  # token supply per type (board or player hand)
+MAX_COST_PER_TYPE        = 7.0   # max single-type cost on any card (e.g. Alakazam)
+MAX_BONUS_PER_CARD       = 2.0   # max bonuses of one type on a single card
+MAX_EVOLVE_COST_PER_TYPE = 4.0   # max single-type evolve cost on any card
+MAX_POINT_PER_CARD       = 5.0   # max VP on a single card
+MAX_OWNED_BONUS_PER_TYPE = 10.0  # practical ceiling for accumulated same-type discounts
+WINNING_THRESHOLD        = 18.0  # points at which the game can end
+MAX_RESERVED_CARDS       = 3     # maximum reserved cards per player
+
+# v1 layout (345-dim): used by old trained models
+_DEPRECATED_OBS_SIZE = 345
+
+# v2 layout:
+#   global tokens:    6
+#   board slots:     14 × 19  = 266  (cost/6, bonus/6, evolve/6, point/1; tier dropped)
+#   players:          4 × 52  = 208  (tokens/6, owned_bonus/6, points/1,
+#                                     3 reserved slots × 13 = presence/1 + cost/6 + bonus_type/6)
+#   turn indicator:   4
+#   phase:            3
+OBS_SIZE = 6 + 14 * 19 + 4 * 52 + 4 + 3  # = 487
+
+_POKE_TYPES = list(PokeballType)
 
 
 def compute_observation(game: Game, player_name: str) -> np.ndarray:
-    obs = np.zeros(_OBS_SIZE, dtype=np.float32)
+    obs = np.zeros(OBS_SIZE, dtype=np.float32)
     offset = 0
-    for i, ptype in enumerate(PokeballType):
-        obs[offset + i] = game.tokens.get(ptype, 0) / 10.0
+
+    # Global token supply
+    for i, ptype in enumerate(_POKE_TYPES):
+        obs[offset + i] = game.tokens.get(ptype, 0) / MAX_TOKENS_PER_TYPE
     offset += 6
+
+    # Board slots (14 total: 4+4+4+1+1)
     all_slots = (
         game.board.common_revealed + game.board.uncommon_revealed
         + game.board.rare_revealed + game.board.epic_revealed
@@ -27,44 +53,64 @@ def compute_observation(game: Game, player_name: str) -> np.ndarray:
     )
     for slot in all_slots:
         if slot:
-            obs[offset:offset+6] = [
-                Counter(t.name for t in slot.cost).get(pt, 0) / 5.0
-                for pt in PokeballType
-            ]
-            obs[offset+6:offset+12] = [
-                sum(1 for b in slot.bonus if b.name == pt) / 3.0
-                for pt in PokeballType
-            ]
-            obs[offset+12:offset+18] = [
-                sum(1 for b in slot.evolve if b.name == pt) / 3.0
-                for pt in PokeballType
-            ]
-            obs[offset+18] = slot.point / 15.0
-            obs[offset+19] = list(Tier).index(slot.tier) / 4.0
-        offset += 20
+            cost_counter = Counter(t.name for t in slot.cost)
+            for i, pt in enumerate(_POKE_TYPES):
+                obs[offset + i]      = cost_counter.get(pt, 0) / MAX_COST_PER_TYPE
+                obs[offset + 6 + i]  = sum(1 for b in slot.bonus  if b.name == pt) / MAX_BONUS_PER_CARD
+                obs[offset + 12 + i] = sum(1 for b in slot.evolve if b.name == pt) / MAX_EVOLVE_COST_PER_TYPE
+            obs[offset + 18] = slot.point / MAX_POINT_PER_CARD
+        offset += 19
+
+    # Player states
     player_map = {p.name: p for p in game.players}
     for i in range(4):
-        a = f"player_{i}"
-        if a in player_map:
-            p = player_map[a]
+        pname = f"player_{i}"
+        if pname in player_map:
+            p = player_map[pname]
+
+            # Tokens held
             tc = Counter(t.name for t in p.tokens)
-            for j, pt in enumerate(PokeballType):
-                obs[offset + j] = tc.get(pt, 0) / 10.0
+            for j, pt in enumerate(_POKE_TYPES):
+                obs[offset + j] = tc.get(pt, 0) / MAX_TOKENS_PER_TYPE
             offset += 6
-            tier_counts = Counter(c.tier for c in p.cards if not c.evolved)
-            for t in Tier:
-                obs[offset] = tier_counts.get(t, 0) / 5.0
-                offset += 1
-            obs[offset] = p.points / 18.0
-            obs[offset+1] = len(p.reserved_cards) / 3.0
-            offset += 2
+
+            # Total discount bonuses from owned cards (engine state)
+            bonus_counter: Counter = Counter()
+            for card in p.cards:
+                for b in card.bonus:
+                    bonus_counter[b.name] += 1
+            for j, pt in enumerate(_POKE_TYPES):
+                obs[offset + j] = bonus_counter.get(pt, 0) / MAX_OWNED_BONUS_PER_TYPE
+            offset += 6
+
+            # Victory points
+            obs[offset] = p.points / WINNING_THRESHOLD
+            offset += 1
+
+            # Reserved card slots (3 slots × 13 features)
+            for slot_idx in range(MAX_RESERVED_CARDS):
+                if slot_idx < len(p.reserved_cards):
+                    rc = p.reserved_cards[slot_idx]
+                    obs[offset] = 1.0  # presence
+                    cost_counter = Counter(t.name for t in rc.cost)
+                    for j, pt in enumerate(_POKE_TYPES):
+                        obs[offset + 1 + j] = cost_counter.get(pt, 0) / MAX_COST_PER_TYPE
+                    # Reserved cards always have exactly 1 bonus; one-hot over 6 types
+                    for j, pt in enumerate(_POKE_TYPES):
+                        obs[offset + 7 + j] = 1.0 if (rc.bonus and rc.bonus[0].name == pt) else 0.0
+                offset += 13
         else:
-            offset += 13
+            offset += 52
+
+    # Turn indicator
     for i in range(4):
         obs[offset + i] = 1.0 if f"player_{i}" == game.turn.name else 0.0
     offset += 4
+
+    # Game phase
     for i, ph in enumerate(GamePhase):
         obs[offset + i] = 1.0 if game.phase == ph else 0.0
+
     return obs
 
 
@@ -131,3 +177,12 @@ def compute_mask(game: Game, player_name: str) -> np.ndarray:
             mask[EVOLVE_PASS] = True
 
     return mask
+
+
+def get_obs_fn(model):
+    """Return the compute_observation function matching the model's expected input size."""
+    size = model.observation_space.shape[0]
+    if size == _DEPRECATED_OBS_SIZE:
+        from pokemon_splendor.engine.deprecated_observation import compute_observation as _old
+        return _old
+    return compute_observation

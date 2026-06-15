@@ -369,11 +369,12 @@ def make_early_capture_policy() -> OpponentPolicy:
 def make_rl_policy(model_path: str) -> OpponentPolicy:
     """Load a MaskablePPO model and return it as an opponent policy callable."""
     from sb3_contrib import MaskablePPO
-    from pokemon_splendor.engine.observation import compute_observation
+    from pokemon_splendor.engine.observation import get_obs_fn
     model = MaskablePPO.load(model_path)
+    obs_fn = get_obs_fn(model)
 
     def policy(game: Game, player_name: str) -> int:
-        obs = compute_observation(game, player_name)
+        obs = obs_fn(game, player_name)
         mask = compute_mask(game, player_name)
         action, _ = model.predict(obs, action_masks=mask, deterministic=True)
         return int(action)

@@ -40,14 +40,16 @@ def _make_opponent(agent_type: str, pz_env, player_name: str):
 class SingleAgentEnv(gymnasium.Env):
     """Gymnasium wrapper: player_0 trains against configurable opponents."""
 
-    def __init__(self, jsonl_path: Path, num_players: int = 2, opponent_types: list[str] | None = None):
+    def __init__(self, jsonl_path: Path, num_players: int = 2, opponent_types: list[str] | None = None,
+                 obs_fn=None, obs_size: int | None = None):
         assert num_players >= 2
         self._jsonl_path = jsonl_path
         self._num_players = num_players
         self._opponent_types = opponent_types or ["random"] * (num_players - 1)
         assert len(self._opponent_types) == num_players - 1
 
-        self._pz = PokemonSplendorEnv(jsonl_path, num_players=num_players)
+        self._pz = PokemonSplendorEnv(jsonl_path, num_players=num_players,
+                                      obs_fn=obs_fn, obs_size=obs_size)
         self.observation_space = self._pz.observation_spaces["player_0"]
         self.action_space = self._pz.action_spaces["player_0"]
         self._opponents: dict = {}
@@ -87,7 +89,9 @@ class SingleAgentEnv(gymnasium.Env):
 class RLAgent:
     def __init__(self, model_path: str):
         from sb3_contrib import MaskablePPO
+        from pokemon_splendor.engine.observation import get_obs_fn
         self.model = MaskablePPO.load(model_path)
+        self._obs_fn = get_obs_fn(self.model)
 
     def act(self, obs: np.ndarray, mask: np.ndarray) -> int:
         action, _ = self.model.predict(obs, action_masks=mask, deterministic=True)

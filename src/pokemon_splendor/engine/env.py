@@ -25,7 +25,7 @@ from pokemon_splendor.engine.rules import (
     get_evolvable_cards, check_win_condition, refill_board_slot,
     get_player_bonuses, calculate_effective_cost,
 )
-from pokemon_splendor.engine.observation import compute_observation, compute_mask
+from pokemon_splendor.engine.observation import compute_observation, compute_mask, OBS_SIZE
 
 GAMMA_SHAPING = 0.99
 BASE_ALPHA = 1.0
@@ -79,19 +79,22 @@ TIER_SLOTS = {
 class PokemonSplendorEnv(AECEnv):
     metadata = {"name": "pokemon_splendor_v0"}
 
-    def __init__(self, jsonl_path: Path, num_players: int = 2, render_mode: str | None = None):
+    def __init__(self, jsonl_path: Path, num_players: int = 2, render_mode: str | None = None,
+                 obs_fn=None, obs_size: int | None = None):
         assert 2 <= num_players <= 4
         self.jsonl_path = jsonl_path
         self.num_players = num_players
         self.render_mode = render_mode
         self._all_pokemon = load_pokemon(jsonl_path)
+        self._obs_fn = obs_fn if obs_fn is not None else compute_observation
+        self._obs_size_override = obs_size if obs_size is not None else OBS_SIZE
 
         self.possible_agents = [f"player_{i}" for i in range(num_players)]
         self.agents = list(self.possible_agents)
 
-        obs_size = self._obs_size()
+        size = self._obs_size()
         self.observation_spaces = {
-            a: gymnasium.spaces.Box(0, 1, shape=(obs_size,), dtype=np.float32)
+            a: gymnasium.spaces.Box(0, 1, shape=(size,), dtype=np.float32)
             for a in self.possible_agents
         }
         self.action_spaces = {
@@ -101,9 +104,7 @@ class PokemonSplendorEnv(AECEnv):
         self.game: Game | None = None
 
     def _obs_size(self) -> int:
-        # Fixed size regardless of num_players so models are portable across game sizes.
-        # Layout: 6 board tokens + 14*20 card slots + 4*13 player slots + 4 current-player one-hot + 3 phase
-        return 6 + 14 * 20 + 4 * 13 + 4 + 3  # = 345
+        return self._obs_size_override
 
     def observation_space(self, agent: str):
         return self.observation_spaces[agent]
@@ -179,7 +180,7 @@ class PokemonSplendorEnv(AECEnv):
         self._max_steps = 9000
 
     def observe(self, agent: str) -> np.ndarray:
-        return compute_observation(self.game, agent)
+        return self._obs_fn(self.game, agent)
 
     def action_mask(self, agent: str) -> np.ndarray:
         return compute_mask(self.game, agent)
