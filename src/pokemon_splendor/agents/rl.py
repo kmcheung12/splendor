@@ -81,7 +81,11 @@ class SingleAgentEnv(gymnasium.Env):
             if opp is None:
                 action = int(np.random.choice(np.where(mask)[0]))
             else:
-                obs, _, _, _, _ = self._pz.last()
+                obs_fn = getattr(opp, "_obs_fn", None)
+                if obs_fn is not None:
+                    obs = obs_fn(self._pz.game, name)
+                else:
+                    obs, _, _, _, _ = self._pz.last()
                 action = opp.act(obs, mask)
             self._pz.step(action)
 
