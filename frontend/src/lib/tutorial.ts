@@ -69,6 +69,19 @@ export const BOARD_SELECTOR_MAP: SelectorMap = {
   'own-panel-lanes':     (p) => `[data-player-name="${p}"] .lanes, [data-player-name="${p}"] .lanes-right`,
 }
 
+// ── Selector map for the mobile layout ───────────────────────────────────────
+
+export const MOBILE_SELECTOR_MAP: SelectorMap = {
+  'board':               '.board',
+  'token-pool':          '.pool',
+  'tier-reservable':     '.card-row',           // rare / uncommon / common rows
+  'tier-rarer':          '.board-top .top-cards',
+  'own-panel':           (p) => `.railbtn[data-player-name="${p}"]`,
+  'own-panel-tokens':    (p) => `.railbtn[data-player-name="${p}"] .cstacks`,
+  'own-panel-reserved':  (p) => `.railbtn[data-player-name="${p}"] .rmini`,
+  'own-panel-lanes':     (p) => `.railbtn[data-player-name="${p}"] .cstacks`,
+}
+
 // ── Tutorial items (ordered — engine shows the first pending item whose trigger fires) ──
 
 export const TUTORIAL_ITEMS: TutorialItem[] = [

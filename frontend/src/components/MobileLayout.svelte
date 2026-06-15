@@ -4,6 +4,7 @@
   import {
     gameState, mySlot, isMyTurn, phase, playerNames,
   } from '../lib/gameStore'
+  import { activeTutorialItem } from '../lib/tutorialStore'
   import MobileBoard from './MobileBoard.svelte'
   import MobilePlayerRail from './MobilePlayerRail.svelte'
   import PlayerHandModal from './PlayerHandModal.svelte'
@@ -77,7 +78,7 @@
 
 <div class="mobile-screen">
   <!-- Left rail column -->
-  <div class="railcol">
+  <div class="railcol" class:tut-lift={!!$activeTutorialItem}>
     {#each rails.left as p (p.name)}
       <MobilePlayerRail
         player={p}
@@ -89,14 +90,14 @@
   </div>
 
   <!-- Board (scaled) -->
-  <div class="boardArea" bind:this={boardArea}>
+  <div class="boardArea" class:tut-lift={!!$activeTutorialItem} bind:this={boardArea}>
     <div class="board-scale" style="transform: translate(-50%,-50%) scale({scale})">
       <MobileBoard />
     </div>
   </div>
 
   <!-- Right rail column -->
-  <div class="railcol">
+  <div class="railcol" class:tut-lift={!!$activeTutorialItem}>
     {#each rails.right as p (p.name)}
       <MobilePlayerRail
         player={p}
@@ -138,6 +139,13 @@
   .boardArea {
     position: relative; overflow: hidden;
     flex: 1; min-width: 0;
+  }
+
+  /* Lift game containers above the tutorial dim overlay (z-index 1000) so
+     tutorial-highlight (z-index 1010) is visible even inside CSS transforms. */
+  .tut-lift {
+    position: relative;
+    z-index: 1001;
   }
   .board-scale {
     position: absolute; top: 50%; left: 50%;

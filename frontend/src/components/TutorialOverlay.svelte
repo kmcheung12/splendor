@@ -6,6 +6,7 @@
   import { resolveSelector, type SelectorMap } from '../lib/tutorial'
 
   export let selectorMap: SelectorMap
+  export let noDim: boolean = false
 
   $: playerName = $gameState?.players[$mySlot ?? -1]?.name ?? ''
 
@@ -42,7 +43,7 @@
 
 {#if $activeTutorialItem}
   <!-- Dim overlay — pointer-events: none so game elements remain interactive -->
-  <div class="tutorial-dim"></div>
+  {#if !noDim}<div class="tutorial-dim"></div>{/if}
 
   <!-- Modal — anchored bottom-centre of viewport -->
   <div class="tutorial-modal" role="dialog" aria-modal="true" aria-labelledby="tut-title">

@@ -26,7 +26,7 @@
   $: lastAction = $lastActions[player.name] ?? ''
 </script>
 
-<button class="railbtn" on:click={() => dispatch('expand')}>
+<button class="railbtn" data-player-name={player.name} on:click={() => dispatch('expand')}>
   <div class="prail" class:active={isActive}>
     <div class="prail-head">
       <div class="avatar" class:avatar-on={isActive}>{avatarNum}</div>

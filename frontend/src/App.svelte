@@ -4,7 +4,7 @@
   import { connect, claimSlot, startGame } from './lib/ws'
   import { gameState, gameOver, playerNames, lobbyState, mySlot } from './lib/gameStore'
   import { tutorialMode, initTutorial } from './lib/tutorialStore'
-  import { BOARD_SELECTOR_MAP } from './lib/tutorial'
+  import { BOARD_SELECTOR_MAP, MOBILE_SELECTOR_MAP } from './lib/tutorial'
   import Lobby from './components/Lobby.svelte'
   import Board from './components/Board.svelte'
   import PlayerPanel from './components/PlayerPanel.svelte'
@@ -148,6 +148,10 @@
       <div class="mobile-root">
         {#if $gameState}
           <MobileLayout />
+        {/if}
+        {#if $tutorialMode}
+          <TutorialController />
+          <TutorialOverlay selectorMap={MOBILE_SELECTOR_MAP} noDim={true} />
         {/if}
         {#if $gameOver}
           <GameOver winner={$gameOver.winner} scores={$gameOver.scores} rounds={$gameOver.rounds} />
