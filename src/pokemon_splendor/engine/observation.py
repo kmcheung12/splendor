@@ -61,12 +61,18 @@ def compute_observation(game: Game, player_name: str) -> np.ndarray:
             obs[offset + 18] = slot.point / MAX_POINT_PER_CARD
         offset += 19
 
-    # Player states
+    # Player states — self-relative: requesting player always in slot 0,
+    # then other present players in turn order, then None-padded to 4 slots.
+    present = [p.name for p in game.players]  # ordered as the game sees them
+    self_pos = present.index(player_name)
+    ordered = present[self_pos:] + present[:self_pos]  # rotate so self is first
+    slots = ordered + [None] * (4 - len(ordered))       # pad absent slots with None
+
     player_map = {p.name: p for p in game.players}
-    for i in range(4):
-        pname = f"player_{i}"
-        if pname in player_map:
-            p = player_map[pname]
+
+    for slot_name in slots:
+        if slot_name is not None:
+            p = player_map[slot_name]
 
             # Tokens held
             tc = Counter(t.name for t in p.tokens)
@@ -102,10 +108,10 @@ def compute_observation(game: Game, player_name: str) -> np.ndarray:
         else:
             offset += 52
 
-    # Turn indicator
-    for i in range(4):
-        obs[offset + i] = 1.0 if f"player_{i}" == game.turn.name else 0.0
-    offset += 4
+    # Turn indicator — self-relative to match player slot ordering above
+    for slot_name in slots:
+        obs[offset] = 1.0 if slot_name == game.turn.name else 0.0
+        offset += 1
 
     # Game phase
     for i, ph in enumerate(GamePhase):
