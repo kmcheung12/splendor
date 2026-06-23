@@ -77,6 +77,8 @@ def main():
                         help="PPO minibatch size for gradient updates (default 64)")
     parser.add_argument("--obs", choices=["new", "deprecated"], default="new",
                         help="Observation version: 'new' (487-dim, default) or 'deprecated' (345-dim old obs)")
+    parser.add_argument("--quiet", action="store_true",
+                        help="Suppress progress output (benchmark mode)")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--data", default="data/pokemon.jsonl")
     args = parser.parse_args()
@@ -93,7 +95,7 @@ def main():
         opponent_types = [a.strip() for a in args.opponents.split(",")]
         _run_train(jsonl, args.episodes, args.save, opponent_types, args.resume, args.lr, args.workers, args.hidden_size, args.hidden_layers, args.device, args.batch_size, args.obs)
     elif args.mode == "benchmark":
-        _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent, args.workers)
+        _run_benchmark(jsonl, agent_types, args.games, render_mode, args.mcts_sims, args.mcts_depth, args.mcts_opponent, args.workers, args.quiet)
     elif args.mode == "alpha-train":
         _run_alpha_train(
             jsonl, args.alpha_iters, args.alpha_games,
@@ -255,7 +257,7 @@ def _run_one_benchmark_game(args: tuple) -> int:
 
 def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_mode,
                    mcts_sims: int = 200, mcts_depth: int = 4, mcts_opponent: str | None = None,
-                   n_workers: int = 1):
+                   n_workers: int = 1, quiet: bool = False):
     wins = {i: 0 for i in range(len(agent_types))}
 
     def _print_results(played: int):
@@ -275,13 +277,15 @@ def _run_benchmark(jsonl: Path, agent_types: list[str], num_games: int, render_m
                     pool.imap_unordered(_run_one_benchmark_game, game_args), 1
                 ):
                     wins[winner_idx] += 1
-                    print(f"\r  {completed}/{num_games} ({100*completed/num_games:.0f}%)",
-                          end="", flush=True)
+                    if not quiet:
+                        print(f"\r  {completed}/{num_games} ({100*completed/num_games:.0f}%)",
+                              end="", flush=True)
         else:
             for completed, args in enumerate(game_args, 1):
                 wins[_run_one_benchmark_game(args)] += 1
-                print(f"\r  {completed}/{num_games} ({100*completed/num_games:.0f}%)",
-                      end="", flush=True)
+                if not quiet:
+                    print(f"\r  {completed}/{num_games} ({100*completed/num_games:.0f}%)",
+                          end="", flush=True)
     except KeyboardInterrupt:
         _print_results(sum(wins.values()))
         return
