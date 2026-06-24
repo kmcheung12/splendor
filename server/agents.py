@@ -33,13 +33,14 @@ def make_agent(agent_type: str, env: PokemonSplendorEnv, player_name: str,
         return DenialAgent(env, player_name)
 
     if agent_type == "mcts":
-        from pokemon_splendor.agents.mcts import MCTSAgent, make_early_capture_policy
+        from pokemon_splendor.agents.mcts import MCTSAgent, make_rl_policy
+        opponent_policy = make_rl_policy("v7-sp15.zip")
         return MCTSAgent(env, player_name, n_simulations=mcts_sims, depth=mcts_depth,
-                         opponent_policy=make_early_capture_policy())
+                         opponent_policy=opponent_policy)
 
     if agent_type == "mctsrl":
         from pokemon_splendor.agents.mcts import MCTSAgent, make_rl_policy
-        opponent_policy = make_rl_policy("v7-sp15")
+        opponent_policy = make_rl_policy("models/v30-256x3.zip")
         return MCTSAgent(env, player_name, n_simulations=mcts_sims, depth=mcts_depth,
                          opponent_policy=opponent_policy)
 

@@ -27,9 +27,9 @@
     { value: 'high-point',             label: 'Easy 2' },
     { value: 'evolution-chain',         label: 'Medium 1' },
     { value: 'early-capture',           label: 'Medium 2' },
-    { value: 'denial',                  label: 'Hard 1' },
-    { value: 'mcts',                    label: 'Hard 2' },
-    { value: 'mctsrl',                  label: 'Expert' },
+    { value: 'denial',                  label: 'Medium 3' },
+    { value: 'mcts',                    label: 'Hard 1' },
+    { value: 'mctsrl',                  label: 'Hard 2' },
     { value: 'models/v30-256x3.zip',    label: 'RL v30' },
   ]
 
