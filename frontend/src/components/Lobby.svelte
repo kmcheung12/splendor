@@ -19,17 +19,18 @@
     easy:      ['random', 'bonus-engine', 'high-point'],
     medium:    ['high-point', 'evolution-chain', 'early-capture'],
     hard:      ['early-capture', 'denial', 'mcts'],
-    expert:    ['mcts', 'mctsrl'],
+    expert:    ['mcts', 'mctsrl', 'models/v30-256x3.zip'],
   }
   const AGENT_OPTIONS: { value: string; label: string }[] = [
-    { value: 'random',           label: 'Beginner' },
-    { value: 'bonus-engine',     label: 'Easy 1' },
-    { value: 'high-point',       label: 'Easy 2' },
-    { value: 'evolution-chain',  label: 'Medium 1' },
-    { value: 'early-capture',    label: 'Medium 2' },
-    { value: 'denial',           label: 'Hard 1' },
-    { value: 'mcts',             label: 'Hard 2' },
-    { value: 'mctsrl',           label: 'Expert' },
+    { value: 'random',                  label: 'Beginner' },
+    { value: 'bonus-engine',            label: 'Easy 1' },
+    { value: 'high-point',             label: 'Easy 2' },
+    { value: 'evolution-chain',         label: 'Medium 1' },
+    { value: 'early-capture',           label: 'Medium 2' },
+    { value: 'denial',                  label: 'Hard 1' },
+    { value: 'mcts',                    label: 'Hard 2' },
+    { value: 'mctsrl',                  label: 'Expert' },
+    { value: 'models/v30-256x3.zip',    label: 'RL v30' },
   ]
 
   let difficulty: Difficulty = 'medium'
